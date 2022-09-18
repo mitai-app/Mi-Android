@@ -6,6 +6,7 @@ import android.os.IBinder
 import com.google.gson.GsonBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import io.vonley.mi.BuildConfig
+import io.vonley.mi.Mi
 import io.vonley.mi.base.BaseClient
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
 import io.vonley.mi.utils.Semver
@@ -115,6 +116,7 @@ class PSXService : Service(), BaseClient {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val onStartCommand = super.onStartCommand(intent, flags, startId)
         if (manager.jbService) {
+            Mi.log(Mi.MiEvent.MI_SERVICE_START, Pair("Service", PSXService::class.java.name))
             binder.jb.startService()
         }
         binder.sync.getClients(true)
@@ -129,6 +131,7 @@ class PSXService : Service(), BaseClient {
     override fun onDestroy() {
         binder.sync.stop()
         binder.jb.stopService()
+        Mi.log(Mi.MiEvent.MI_SERVICE_END, Pair("Service", PSXService::class.java.name))
         update?.cancel()
         check = false
         super.onDestroy()

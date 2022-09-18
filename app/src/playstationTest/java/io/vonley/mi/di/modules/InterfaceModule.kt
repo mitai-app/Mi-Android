@@ -6,11 +6,10 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import io.vonley.mi.di.network.MiFTPClient
 import io.vonley.mi.di.network.MiServer
-import io.vonley.mi.di.network.SyncService
+import io.vonley.mi.ui.main.console.data.remote.SyncService
 import io.vonley.mi.di.network.PSXService
 import io.vonley.mi.di.network.impl.MiFTPClientImpl
 import io.vonley.mi.di.network.impl.MiServerImpl
-import io.vonley.mi.di.network.impl.SyncServiceImpl
 import io.vonley.mi.di.network.impl.PSXServiceImpl
 import io.vonley.mi.di.network.protocols.ccapi.CCAPI
 import io.vonley.mi.di.network.protocols.ccapi.CCAPIImpl
@@ -22,6 +21,9 @@ import io.vonley.mi.di.network.protocols.ps3mapi.PS3MAPI
 import io.vonley.mi.di.network.protocols.ps3mapi.PS3MAPIImpl
 import io.vonley.mi.di.network.protocols.webman.WebManImplTest
 import io.vonley.mi.di.network.protocols.webman.Webman
+import io.vonley.mi.ui.main.console.data.remote.SyncServiceImpl
+import io.vonley.mi.ui.main.console.data.repository.ConsoleRepositoryImpl
+import io.vonley.mi.ui.main.console.domain.repository.ConsoleRepository
 import javax.inject.Singleton
 
 
@@ -60,6 +62,10 @@ abstract class InterfaceModule {
     @Binds
     @Singleton
     abstract fun bindClientService(impl: SyncServiceImpl): SyncService
+
+    @Binds
+    @Singleton
+    abstract fun bindConsoleRepository(impl: ConsoleRepositoryImpl): ConsoleRepository
 
     @Binds
     @Singleton

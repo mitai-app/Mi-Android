@@ -8,7 +8,12 @@ import io.vonley.mi.di.network.protocols.common.models.ConsoleType
 import io.vonley.mi.di.network.protocols.common.models.Process
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import java.io.BufferedReader
 import java.io.IOException
+import java.io.InputStream
+import java.io.InputStreamReader
+import java.io.OutputStream
+import java.io.PrintWriter
 import kotlin.coroutines.CoroutineContext
 
 class CCAPIImpl(override val service: PSXService) : CCAPI {
@@ -71,6 +76,11 @@ class CCAPIImpl(override val service: PSXService) : CCAPI {
             null
         }
     }
+
+    override val pw: OutputStream
+        get() = System.err
+    override val br: BufferedReader
+        get() = System.`in`.bufferedReader()
 
     override val coroutineContext: CoroutineContext
         get() = Dispatchers.IO + job

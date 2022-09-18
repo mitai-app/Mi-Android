@@ -1,7 +1,7 @@
 package io.vonley.mi.ui.main
 
 import io.vonley.mi.base.BasePresenter
-import io.vonley.mi.di.network.SyncService
+import io.vonley.mi.ui.main.console.data.remote.SyncService
 import io.vonley.mi.models.enums.PlatformType
 import javax.inject.Inject
 

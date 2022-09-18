@@ -1,8 +1,6 @@
 package io.vonley.mi.di.network.protocols.ps3mapi
 
 import androidx.lifecycle.LiveData
-import io.vonley.mi.di.network.impl.get
-import io.vonley.mi.di.network.impl.set
 import io.vonley.mi.di.network.protocols.common.*
 import io.vonley.mi.di.network.protocols.common.cmds.Boot
 import io.vonley.mi.di.network.protocols.common.cmds.Buzzer
@@ -12,17 +10,13 @@ import io.vonley.mi.di.network.protocols.common.models.*
 import io.vonley.mi.di.network.protocols.ps3mapi.cmds.*
 import io.vonley.mi.di.network.protocols.ps3mapi.models.PS3MAPIResponse
 import io.vonley.mi.extensions.e
-import io.vonley.mi.extensions.toJson
 import io.vonley.mi.models.enums.Feature
 import java.io.IOException
-import java.net.InetSocketAddress
-import java.net.Socket
+import java.nio.channels.NotYetConnectedException
 
 interface PS3MAPI : PSXProtocol, PSXNotifier {
 
     override val feature: Feature get() = Feature.PS3MAPI
-    private val _socket: Socket? get() = service[service.target, feature]
-    override val socket: Socket get() = _socket!!
 
     val listener: Listener
     val processes: List<Process>
@@ -33,68 +27,40 @@ interface PS3MAPI : PSXProtocol, PSXNotifier {
 
 
     override suspend fun sendAndRecv(data: String?): String? {
-        return if (authed && _socket?.isConnected == true) {
-            super.sendAndRecv(data)
-        } else null // Not Connected!
-    }
-
-
-    suspend fun connect(): Boolean {
-        if (_socket == null) {
-            try {
-                authed = false
-                service[service.target] = feature
-                if (_socket == null) return false
-            }catch (e: Throwable){
-                return false
-            }
-        }
-        return when {
-            authed && _socket?.isConnected == true -> true
-            !authed && _socket?.isConnected == true -> {
-                try {
-                    val recv = recv()?:run {
-                        "Did not receive value".e(TAG)
-                        return false
+        return when(socket.isConnected) {
+            true -> {
+                if (authed) {
+                    "${this::class.simpleName} Authenticated and connected!".e(TAG)
+                    super.sendAndRecv(data)
+                } else {
+                    "${this::class.simpleName} Not connected! Auth: $authed, Connected? ${socket.isConnected}".e(
+                        TAG
+                    )
+                    reAuth {
+                        sendAndRecv(data)
+                    }?: run {
+                        throw NotYetConnectedException()
                     }
-                    "Got Value: $recv".e(TAG)
-                    val first: PS3MAPIResponse = PS3MAPIResponse.parse(recv)
-                    "Parsed: ${first.toJson()}".e(TAG)
-                    if (first.success && first.code === PS3MAPIResponse.Code.PS3MAPICONNECTED) {
-                        "Checking Next Value".e(TAG)
-                        val secondResponse = recv()?:run {
-                            "value is null".e(TAG)
-                            recv()?.let { r ->
-                                "HMM OK: $r".e(TAG)
-                            }?:run{
-                                "FAILED: yup".e(TAG)
-                            }
-                            return false
-                        }
-                        "Next Value: $secondResponse".e(TAG)
-                        val second: PS3MAPIResponse = PS3MAPIResponse.parse(secondResponse)
-                        "Parsed second: ${second.toJson()}".e(TAG)
-                        if (second.success && second.code === PS3MAPIResponse.Code.PS3MAPICONNECTEDOK) {
-                            authed = true
-                            return true
-                        }
-                        return true
-                    }
-                    true
-                } catch (e: IOException) {
-                    e.printStackTrace()
-                    false
-                }
+                } // Not Connected!
             }
-            else -> try {
-                authed = false
-                service[service.target] = feature
-                false
-            } catch (e: Throwable) {
-                false
+            else -> reAuth {
+                sendAndRecv(data)
+            }?: run {
+                throw NotYetConnectedException()
             }
         }
     }
+
+    suspend fun reAuth(onReAuth: OnReAuth): String? {
+        socket.close()
+        if(connect()){
+            return onReAuth()
+        }
+        return null
+    }
+
+
+    suspend fun connect(): Boolean
 
     @Throws(IOException::class) // JMAPIException::class)
     suspend fun openDataSocket()
@@ -250,7 +216,7 @@ interface PS3MAPI : PSXProtocol, PSXNotifier {
             res.code,
             mode.toString() + " : " + res.response
         )
-        return res.code === PS3MAPIResponse.Code.COMMANDOK
+        return res.code === PS3MAPIResponse.Code.PS3MAPI_OK_SUCCESSFUL_COMMAND
     }
 
     suspend fun checkSysCall() {
@@ -300,21 +266,31 @@ interface PS3MAPI : PSXProtocol, PSXNotifier {
     @Throws(Exception::class)
     override suspend fun buzzer(buzz: Buzzer) {
         if (!isConnected) {
+            "${this::class.simpleName} not connected to host.".e(TAG)
             throw Exception("Not connected to host.")
         }
-        val buzzer = "PS3 BUZZER ${buzz.ordinal}"
-        val r: PS3MAPIResponse = PS3MAPIResponse.parse(sendAndRecv(buzzer) ?: return)
+        val buzzer = "PS3 BUZZER${buzz.ordinal}"
+        val response = sendAndRecv(buzzer) ?: return run {
+            listener.onError("No response")
+        }
+        "RESPONSE: $response".e("WTF")
+        val r: PS3MAPIResponse = PS3MAPIResponse.parse(response)
         listener.onResponse(PS3OP.BUZZ, r.code, "A buzz was sent to the ps3")
         println(r.response)
+
     }
 
     @Throws(Exception::class)
     override suspend fun boot(ps3boot: Boot) {
         if (!isConnected) {
+            "${this::class.simpleName} not connected to host.".e(TAG)
             throw Exception("Not connected to host.")
         }
         val boot = "PS3 $ps3boot"
-        val res: PS3MAPIResponse = PS3MAPIResponse.parse(sendAndRecv(boot) ?: return)
+        val sendAndRecv = sendAndRecv(boot) ?: return run {
+            listener.onError("No response")
+        }
+        val res: PS3MAPIResponse = PS3MAPIResponse.parse(sendAndRecv)
         val msg = when (ps3boot) {
             Boot.REBOOT -> "Rebooting console"
             Boot.SHUTDOWN -> "Shutting down console"
@@ -325,9 +301,11 @@ interface PS3MAPI : PSXProtocol, PSXNotifier {
         println(res.response)
     }
 
+
     @Throws(Exception::class)
     override suspend fun notify(message: String) {
         if (!isConnected) {
+            "${this::class.simpleName} not connected to host.".e(TAG)
             throw Exception("Not connected to host.")
         }
         val notify = "PS3 NOTIFY $message"
@@ -426,7 +404,7 @@ interface PS3MAPI : PSXProtocol, PSXNotifier {
             super.close()
             listener.onResponse(
                 PS3OP.DISCONNECTED,
-                PS3MAPIResponse.Code.COMMANDOK,
+                PS3MAPIResponse.Code.PS3MAPI_OK_SUCCESSFUL_COMMAND,
                 "Disconnected from ps3"
             )
             true

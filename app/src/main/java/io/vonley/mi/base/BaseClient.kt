@@ -44,6 +44,7 @@ interface BaseClient : CoroutineScope {
         execute.enqueue(response)
     }
 
+
     fun getRequest(url: String): Response? {
         val req = Request.Builder()
             .url(url)

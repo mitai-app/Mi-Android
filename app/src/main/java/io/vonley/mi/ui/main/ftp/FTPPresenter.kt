@@ -6,7 +6,7 @@ import kotlinx.coroutines.withContext
 import io.vonley.mi.base.BasePresenter
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
 import io.vonley.mi.di.network.MiFTPClient
-import io.vonley.mi.di.network.SyncService
+import io.vonley.mi.ui.main.console.data.remote.SyncService
 import io.vonley.mi.utils.SharedPreferenceManager
 import org.apache.commons.net.ftp.FTPFile
 import java.io.InputStream

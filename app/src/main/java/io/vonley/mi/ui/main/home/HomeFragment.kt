@@ -15,7 +15,7 @@ import io.vonley.mi.databinding.FragmentHomeBinding
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
 import io.vonley.mi.intents.ver
 import io.vonley.mi.models.Device
-import io.vonley.mi.models.Mi
+import io.vonley.mi.models.MiResponse
 import io.vonley.mi.ui.main.home.adapters.TextViewAdapter
 import io.vonley.mi.utils.SharedPreferenceManager
 import javax.inject.Inject
@@ -101,7 +101,7 @@ class HomeFragment : Fragment(), HomeContract.View {
         adapter.add(s)
     }
 
-    override fun onCommand(mi: Mi<Mi.Cmd>) {
+    override fun onCommand(mi: MiResponse<MiResponse.Cmd>) {
         adapter.add(mi.response)
     }
 

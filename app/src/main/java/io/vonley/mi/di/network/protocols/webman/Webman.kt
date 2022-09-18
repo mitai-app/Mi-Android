@@ -3,8 +3,6 @@ package io.vonley.mi.di.network.protocols.webman
 
 import android.os.Environment
 import android.util.Log
-import io.vonley.mi.base.BaseClient
-import io.vonley.mi.di.network.impl.get
 import io.vonley.mi.di.network.protocols.common.PSXProtocol
 import io.vonley.mi.di.network.protocols.common.PSXNotifier
 import io.vonley.mi.di.network.protocols.common.cmds.Boot
@@ -12,6 +10,7 @@ import io.vonley.mi.di.network.protocols.common.cmds.Buzzer
 import io.vonley.mi.di.network.protocols.webman.models.Game
 import io.vonley.mi.di.network.protocols.webman.models.GameType
 import io.vonley.mi.models.enums.Feature
+import io.vonley.mi.ui.main.console.data.remote.get
 import okhttp3.ResponseBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -40,20 +39,33 @@ interface Webman : PSXProtocol, PSXNotifier {
         val file = download(xml)?.string() ?: return EnumMap(GameType::class.java)
         val document = Jsoup.parse(file, "", Parser.xmlParser())
         return hashMapOf(
-            Pair(GameType.PS3, getPS3Games(document)),
-            Pair(GameType.PS2, getPS2Games(document)),
-            Pair(GameType.PSP, getPSPGames(document)),
-            Pair(GameType.PSX, getPSXGames(document))
+            Pair(GameType.PS3, getGames(document, GameID.PS3)),
+            Pair(GameType.PS2, getGames(document, GameID.PS2)),
+            Pair(GameType.PSP, getGames(document, GameID.PSP)),
+            Pair(GameType.PSX, getGames(document, GameID.PSX))
         )
     }
 
+    enum class GameID(private val id: String) {
+        PSX("seg_wm_psx_items"),
+        PSP("seg_wm_psp_items"),
+        PS2("seg_wm_ps2_items"),
+        PS3("seg_wm_ps3_items");
+
+
+        override fun toString(): String {
+            return id.lowercase()
+        }
+    }
+
     @Throws(Exception::class)
-    suspend fun getPSXGames(document: Document): List<Game> {
-        val games = document.getElementById("seg_wm_psx_items")?:return emptyList()
-        val tables = games.getElementsByTag("Table")
+    suspend fun getGames(document: Document, game: GameID): List<Game> {
+        val games = document.getElementById(game.toString())?:return emptyList()
+        val tables = games.getElementsByTag("T").takeIf { it.isNotEmpty() } ?: games.getElementsByTag("Table")
         val ps2Games: MutableList<Game> = ArrayList<Game>()
         for (table in tables) {
-            if (table.attr("key") == "ps2_classic_launcher") continue
+            val tableKey = table.attr("key")
+            if (tableKey == "ps2_classic_launcher" || tableKey == "inc") continue
             val singleton = table.children()
             var title = ""
             var icon = ""
@@ -62,19 +74,20 @@ interface Webman : PSXProtocol, PSXNotifier {
             for (s in singleton) {
                 when {
                     s.attr("key") == "title" -> {
-                        title = s.text()
+                        title = s.text().replace("<>","").replace("</>","")
                     }
                     s.attr("key") == "icon" -> {
-                        icon = s.text()
+                        icon = s.text().replace("<>","").replace("</>","")
                     }
                     s.attr("key") == "module_action" -> {
-                        link = s.text().replace("127.0.0.1", service.targetIp ?: "")
+                        link = s.text().replace("127.0.0.1", service.targetIp.toString()).replace("<>","").replace("</>","")
                     }
                     s.attr("key") == "info" -> {
-                        info = s.text()
+                        info = s.text().replace("<>","").replace("</>","")
                     }
                 }
             }
+            if(title.trim().isBlank()) continue
             icon = try {
                 downloadFile(
                     "http://" + service.targetIp + ":80" + icon.replace(" ", "%20"),
@@ -90,133 +103,6 @@ interface Webman : PSXProtocol, PSXNotifier {
         return ps2Games
     }
 
-    @Throws(Exception::class)
-    suspend fun getPSPGames(document: Document): List<Game> {
-        val games = document.getElementById("seg_wm_psp_items")?:return emptyList()
-        val tables = games.getElementsByTag("Table")
-        val ps2Games: MutableList<Game> = ArrayList<Game>()
-        for (table in tables) {
-            if (table.attr("key") == "ps2_classic_launcher") continue
-            val singleton = table.children()
-            var title = ""
-            var icon = ""
-            var link = ""
-            var info = ""
-            for (s in singleton) {
-                when {
-                    s.attr("key") == "title" -> {
-                        title = s.text()
-                    }
-                    s.attr("key") == "icon" -> {
-                        icon = s.text()
-                    }
-                    s.attr("key") == "module_action" -> {
-                        link = s.text().replace("127.0.0.1", service.targetIp.toString())
-                    }
-                    s.attr("key") == "info" -> {
-                        info = s.text()
-                    }
-                }
-            }
-            icon = try {
-                downloadFile(
-                    "http://" + service.targetIp.toString() + ":80" + icon.replace(" ", "%20"),
-                    Environment.getExternalStorageDirectory().toString(),
-                    title + "icon.png"
-                )
-            } catch (ex: Exception) {
-                ex.printStackTrace()
-                ""
-            }
-            ps2Games.add(Game(title, icon, link, info))
-        }
-        return ps2Games
-    }
-
-    @Throws(Exception::class)
-    suspend fun getPS2Games(document: Document): List<Game> {
-        val ps2_games = document.getElementById("seg_wm_ps2_items")?:return emptyList()
-        val ps2_tables = ps2_games.getElementsByTag("Table")
-        val ps2Games: MutableList<Game> = ArrayList<Game>()
-        for (table in ps2_tables) {
-            if (table.attr("key") == "ps2_classic_launcher") continue
-            val singleton = table.children()
-            var title = ""
-            var icon = ""
-            var link = ""
-            var info = ""
-            for (s in singleton) {
-                when {
-                    s.attr("key") == "title" -> {
-                        title = s.text()
-                    }
-                    s.attr("key") == "icon" -> {
-                        icon = s.text()
-                    }
-                    s.attr("key") == "module_action" -> {
-                        link = s.text().replace("127.0.0.1", service.targetIp.toString())
-                    }
-                    s.attr("key") == "info" -> {
-                        info = s.text()
-                    }
-                }
-            }
-            icon = try {
-                downloadFile(
-                    "http://" + service.targetIp.toString() + ":80" + icon.replace(" ", "%20"),
-                    Environment.getExternalStorageDirectory().toString(),
-                    title + "icon.png"
-                )
-            } catch (ex: Exception) {
-                ex.printStackTrace()
-                ""
-            }
-            ps2Games.add(Game(title, icon, link, info))
-        }
-        return ps2Games
-    }
-
-    @Throws(Exception::class)
-    suspend fun getPS3Games(document: Document): List<Game> {
-        val ps3_game = document.getElementById("seg_wm_ps3_items")?:return emptyList()
-        val ps3_tables = ps3_game.getElementsByTag("Table")
-        val ps3Games: MutableList<Game> = ArrayList<Game>()
-        for (table in ps3_tables) {
-            val singleton = table.children()
-            var title = ""
-            var icon = ""
-            var link = ""
-            var info = ""
-            for (s in singleton) {
-                when {
-                    s.attr("key") == "title" -> {
-                        title = s.text()
-                    }
-                    s.attr("key") == "icon" -> {
-                        icon = s.text()
-                    }
-                    s.attr("key") == "module_action" -> {
-                        link = s.text().replace("127.0.0.1", service.targetIp.toString())
-                    }
-                    s.attr("key") == "info" -> {
-                        info = s.text()
-                    }
-                }
-            }
-            try {
-                icon = downloadFile(
-                    "http://" + service.targetIp.toString() + ":80" + icon.replace(
-                        " ",
-                        "%20"
-                    ), Environment.getExternalStorageDirectory().toString(), title + "icon.png"
-                )
-            } catch (ex: Exception) {
-                ex.printStackTrace()
-            }
-            ps3Games.add(Game(title, icon, link, info))
-        }
-        return ps3Games
-    }
 
     @Throws(Exception::class)
     private fun downloadFile(link: String, dest: String, filename: String): String {
@@ -328,7 +214,7 @@ interface Webman : PSXProtocol, PSXNotifier {
     }
 
     suspend fun play(game: Game) {
-        val url = game.link
+        val url = "http://${service.targetIp}:80${game.link}"
         download(url)
     }
 

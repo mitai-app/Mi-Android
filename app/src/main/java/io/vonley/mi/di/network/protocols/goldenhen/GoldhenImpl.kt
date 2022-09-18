@@ -13,6 +13,9 @@ import kotlinx.coroutines.withContext
 import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.BufferedReader
+import java.io.OutputStream
+import java.io.PrintWriter
 import java.net.Socket
 import javax.inject.Inject
 import kotlin.coroutines.CoroutineContext
@@ -131,4 +134,13 @@ class GoldhenImpl @Inject constructor(
             .map { Pair(it.name, it) }.toTypedArray())
         return map
     }
+
+    private var _br: BufferedReader? = System.`in`.bufferedReader()
+    private var _pw: OutputStream? = System.out
+
+    override val pw: OutputStream
+        get() = _pw!!
+
+    override val br: BufferedReader
+        get() = br!!
 }

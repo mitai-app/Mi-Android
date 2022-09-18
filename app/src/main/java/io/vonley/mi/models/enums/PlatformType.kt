@@ -7,9 +7,9 @@ import androidx.room.Entity
 import androidx.room.TypeConverter
 import com.google.gson.GsonBuilder
 import io.vonley.mi.R
-import io.vonley.mi.di.network.SyncService
+import io.vonley.mi.ui.main.console.data.remote.SyncService
 import io.vonley.mi.extensions.fromJson
-import io.vonley.mi.models.Client
+import io.vonley.mi.ui.main.console.domain.model.Client
 import kotlinx.android.parcel.Parcelize
 import okhttp3.Request
 

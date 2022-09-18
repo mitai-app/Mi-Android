@@ -5,6 +5,8 @@ plugins {
     id 'kotlin-parcelize'
     id 'dagger.hilt.android.plugin'
     id "androidx.navigation.safeargs"
+    id "com.google.gms.google-services"
+    id 'com.google.firebase.crashlytics'
 }
 
 android {
@@ -85,6 +87,10 @@ dependencies {
 
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
 
+    implementation platform("com.google.firebase:firebase-bom:30.2.0")
+    implementation 'com.google.firebase:firebase-analytics-ktx'
+    implementation 'com.google.firebase:firebase-crashlytics-ktx'
+
     implementation 'androidx.recyclerview:recyclerview:1.2.1'
     implementation 'androidx.preference:preference-ktx:1.2.0'
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
@@ -93,9 +99,7 @@ dependencies {
     def navigation = "2.5.0"
 
     implementation "androidx.navigation:navigation-testing:$navigation"
-    implementation "androidx.navigation:navigation-ui:$navigation"
     implementation "androidx.navigation:navigation-ui-ktx:$navigation"
-    implementation "androidx.navigation:navigation-fragment:$navigation"
     implementation "androidx.navigation:navigation-fragment-ktx:$navigation"
 
     implementation "commons-net:commons-net:3.6"

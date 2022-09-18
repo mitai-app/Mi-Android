@@ -8,12 +8,16 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.android.scopes.ActivityRetainedScoped
 import dagger.hilt.components.SingletonComponent
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
 import io.vonley.mi.helpers.Voice
 import io.vonley.mi.helpers.impl.VoiceImpl
 import io.vonley.mi.persistence.AppDatabase
-import io.vonley.mi.persistence.ConsoleDao
+import io.vonley.mi.ui.main.console.data.local.ConsoleDao
+import io.vonley.mi.ui.main.console.data.remote.SyncService
+import io.vonley.mi.ui.main.console.data.repository.ConsoleRepositoryImpl
+import io.vonley.mi.ui.main.console.domain.repository.ConsoleRepository
 import io.vonley.mi.utils.SharedPreferenceManager
 import io.vonley.mi.utils.SharedPreferenceManagerImpl
 import javax.inject.Singleton
@@ -59,5 +63,17 @@ object LocalStorageModule {
         val preferences = context.getSharedPreferences(PREFERENCE_FILE, Context.MODE_PRIVATE)
         return SharedPreferenceManagerImpl(context, preferences)
     }
+
+
+
+    @Provides
+    @Singleton
+    fun provideConsoleRepository(
+        service: SyncService,
+        consoleDao: ConsoleDao
+    ): ConsoleRepository {
+        return ConsoleRepositoryImpl(service, consoleDao)
+    }
+
 
 }

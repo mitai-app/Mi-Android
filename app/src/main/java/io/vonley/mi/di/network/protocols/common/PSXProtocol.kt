@@ -4,7 +4,7 @@ import io.vonley.mi.base.BaseClient
 import io.vonley.mi.di.network.PSXService
 import io.vonley.mi.di.network.protocols.common.cmds.Boot
 import io.vonley.mi.di.network.protocols.common.cmds.Buzzer
-import io.vonley.mi.di.network.protocols.klog.KLog
+import io.vonley.mi.extensions.e
 import io.vonley.mi.models.enums.Feature
 import okhttp3.Callback
 import okhttp3.Headers
@@ -12,9 +12,9 @@ import okhttp3.OkHttpClient
 import okhttp3.RequestBody
 import java.io.BufferedReader
 import java.io.IOException
-import java.io.InputStreamReader
-import java.io.PrintWriter
+import java.io.OutputStream
 import java.net.Socket
+import java.net.SocketException
 
 interface PSXNotifier {
     suspend fun notify(message: String)
@@ -22,6 +22,8 @@ interface PSXNotifier {
     suspend fun buzzer(buzz: Buzzer)
 }
 
+typealias OnPipeReconnected = suspend () -> String?
+typealias OnReAuth = suspend () -> String?
 interface PSXProtocol : BaseClient {
 
     override val http: OkHttpClient get() = service.http
@@ -35,51 +37,52 @@ interface PSXProtocol : BaseClient {
     override fun getRequest(url: String) = service.getRequest(url)
 
     override val TAG: String
-        get() = PSXProtocol::class.qualifiedName?: PSXProtocol::javaClass.name
+        get() = PSXProtocol::class.qualifiedName ?: PSXProtocol::javaClass.name
 
     val service: PSXService
     val feature: Feature
     val socket: Socket
+    val pw: OutputStream
+    val br: BufferedReader
 
     suspend fun sendAndRecv(data: String?): String? {
         return try {
             send(data)
             recv()
-        } catch (ex: Exception) {
-            ex.printStackTrace()
+        } catch (e: SocketException) {
+            //pipe is broken
+            if(socket.isConnected) {
+                return reconnectPipes {
+                    return@reconnectPipes sendAndRecv(data)
+                }
+            }
             null
         }
     }
 
+    suspend fun reconnectPipes(callback: OnPipeReconnected): String? {
+        return null
+    }
+
+
     suspend fun send(data: String?) {
-        try {
-            val pw = PrintWriter(socket.getOutputStream())
-            "sending: ${data.toString()}".equals(TAG)
-            pw.println(data)
-            pw.flush()
-        } catch (ex: Exception) {
-            ex.printStackTrace()
-        }
+        "sending: ${data.toString()}".e(TAG)
+        pw.write(data?.toByteArray())
+        pw.flush()
+        "sent: ${data.toString()}".e(TAG)
     }
 
     suspend fun recv(): String? {
-        return try {
-            val br = BufferedReader(InputStreamReader(socket.getInputStream()))
-            val readLine = br.readLine()
-            readLine
-        } catch (ex: Exception) {
-            ex.printStackTrace()
-            null
-        }
+        "recv'ing".e(TAG)
+        var text = br.readLine()
+        "recv'd: $text".e(TAG)
+        return text
     }
 
     suspend fun recvAll(): ByteArray {
-        return try {
-            socket.getInputStream().readBytes()
-        } catch (ex: Exception) {
-            ex.printStackTrace()
-            ByteArray(0)
-        }
+        val readAllBytes = br.readText().toByteArray()
+        "recv: ${readAllBytes}".e(TAG)
+        return readAllBytes
     }
 
     @Throws(IOException::class)

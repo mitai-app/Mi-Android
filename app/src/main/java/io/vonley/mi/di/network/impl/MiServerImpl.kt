@@ -14,6 +14,8 @@ import androidx.core.app.NotificationManagerCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import fi.iki.elonen.NanoHTTPD
 import io.vonley.mi.BuildConfig
+import io.vonley.mi.Mi
+import io.vonley.mi.Mi.MiEvent.*
 import io.vonley.mi.R
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
 import io.vonley.mi.di.network.MiServer
@@ -47,7 +49,7 @@ class MiServerImpl constructor(
         fun onJailbreakFailed(message: String)
         fun onPayloadSent(msg: String? = null)
         fun onUnsupported(s: String)
-        fun onCommand(mi: Mi<Mi.Cmd>)
+        fun onCommand(mi: MiResponse<MiResponse.Cmd>)
         fun onSendPayloadAttempt(attempt: Int)
         fun onSendPkgSuccess(payload: Payload) {
 
@@ -174,7 +176,7 @@ class MiServerImpl constructor(
             }
         }
 
-        override fun onCommand(mi: Mi<Mi.Cmd>) {
+        override fun onCommand(mi: MiResponse<MiResponse.Cmd>) {
             val name = "onCommand"
             launch {
                 withContext(Dispatchers.Main) {
@@ -372,7 +374,7 @@ class MiServerImpl constructor(
                                             )
                                         }
                                         "DATA: $body".e(TAG)
-                                        val mi: Mi<Mi.Cmd> = body.fromJson() ?: run {
+                                        val mi: MiResponse<MiResponse.Cmd> = body.fromJson() ?: run {
                                             "COULD NOT PARSE".e(TAG)
                                             return newFixedLengthResponse(
                                                 Response.Status.INTERNAL_ERROR,
@@ -387,10 +389,24 @@ class MiServerImpl constructor(
                                             "jb.success" -> {
                                                 callback.onLog("[Status] Enjoy!")
                                                 callback.onJailbreakSucceeded(message)
+                                                val params = arrayOf(
+                                                    Pair("console_device", it.device),
+                                                    Pair("console_version", it.version),
+                                                    Pair("console_supported",it.supported),
+                                                    Pair("from", MiServer::class.java.name)
+                                                )
+                                                Mi.log(JB_SUCCESS, *params)
                                             }
                                             "jb.failed" -> {
                                                 callback.onLog("[JB:Failed] Somethings not right...")
                                                 callback.onJailbreakFailed(message)
+                                                val params = arrayOf(
+                                                    Pair("console_device", it.device),
+                                                    Pair("console_version", it.version),
+                                                    Pair("console_supported",it.supported),
+                                                    Pair("from", MiServer::class.java.name)
+                                                )
+                                                Mi.log(JB_FAILURE, *params)
                                             }
                                             "send.payload" -> {
                                                 callback.onLog("[Payload] Initializing Payload sender (PS4 about to get blessed.)")
@@ -612,6 +628,13 @@ class MiServerImpl constructor(
                         outputStream.close()
                         callback.onPayloadSent(string)
                         outSock.close()
+                        val params = arrayOf(
+                            Pair("console_device", device.device),
+                            Pair("console_version", device.version),
+                            Pair("console_supported",device.supported),
+                            Pair("from", MiServer::class.java.name)
+                        )
+                        Mi.log(JB_PAYLOAD, *params)
                         break
                     } catch (ex: Exception) {
                         attempts++
