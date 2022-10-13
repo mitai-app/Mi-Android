@@ -59,7 +59,7 @@ class PSXService : Service(), BaseClient {
                     continue
                 }
                 getRequest(
-                    "https://raw.githubusercontent.com/Mr-Smithy-x/Mi/main/meta.json",
+                    "https://raw.githubusercontent.com/mitai-app/versioning/main/android.json",
                     object : Callback {
                         override fun onFailure(call: Call, e: IOException) {
 

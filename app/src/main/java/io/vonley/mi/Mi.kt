@@ -17,7 +17,12 @@ object Mi {
         JB_SERVER_END("mi_jb_server_end"),
 
         JB_SUCCESS("mi_jb_success"),
+        JB_STARTED("mi_jb_started"),
+        JB_INITIATED("mi_jb_initiated"),
+        JB_CONTINUE("mi_jb_continue"),
+        JB_PAYLOAD_REQUEST("mi_jb_send_payload_request"),
         JB_PAYLOAD("mi_jb_send_payload"),
+        JB_PENDING("mi_jb_send_pending"),
         JB_FAILURE("mi_jb_failure"),
 
         CONSOLE("mi_console"),

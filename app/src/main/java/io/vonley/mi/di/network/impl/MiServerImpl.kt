@@ -386,6 +386,44 @@ class MiServerImpl constructor(
                                         val cmd = mi.data.cmd
                                         val message = mi.response
                                         when (cmd) {
+                                            "jb.initiated" -> {
+                                                callback.onLog("[JB:Initiated] $message")
+                                                val params = arrayOf(
+                                                    Pair("console_device", it.device),
+                                                    Pair("console_version", it.version),
+                                                    Pair("console_supported",it.supported),
+                                                    Pair("from", MiServer::class.java.name)
+                                                )
+                                                Mi.log(JB_INITIATED, *params)}
+                                            "jb.continue" -> {
+                                                callback.onLog("[JB:Continue] $message")
+                                                val params = arrayOf(
+                                                    Pair("console_device", it.device),
+                                                    Pair("console_version", it.version),
+                                                    Pair("console_supported",it.supported),
+                                                    Pair("from", MiServer::class.java.name)
+                                                )
+                                                Mi.log(JB_CONTINUE, *params)}
+                                            "jb.payload.request" -> {
+                                                callback.onLog("[JB:Payload:Request] $message")
+                                                val params = arrayOf(
+                                                    Pair("console_device", it.device),
+                                                    Pair("console_version", it.version),
+                                                    Pair("console_supported",it.supported),
+                                                    Pair("from", MiServer::class.java.name)
+                                                )
+                                                Mi.log(JB_PAYLOAD_REQUEST, *params)
+                                            }
+                                            "jb.started" -> {
+                                                callback.onLog("[JB:Started] $message")
+                                                val params = arrayOf(
+                                                    Pair("console_device", it.device),
+                                                    Pair("console_version", it.version),
+                                                    Pair("console_supported",it.supported),
+                                                    Pair("from", MiServer::class.java.name)
+                                                )
+                                                Mi.log(JB_STARTED, *params)
+                                            }
                                             "jb.success" -> {
                                                 callback.onLog("[Status] Enjoy!")
                                                 callback.onJailbreakSucceeded(message)
@@ -409,8 +447,12 @@ class MiServerImpl constructor(
                                                 Mi.log(JB_FAILURE, *params)
                                             }
                                             "send.payload" -> {
-                                                callback.onLog("[Payload] Initializing Payload sender (PS4 about to get blessed.)")
-                                                sendPayload(it)
+                                                callback.onLog("[Send:Payload] Initializing Payload sender (PS4 about to get blessed.)")
+                                                sendPayload(it, if(console.version == "9.00") 9090 else 9021)
+                                            }
+                                            "send.pending" -> {
+                                                callback.onLog("[Send:Pending] Initializing Payload sender (PS4 about to get blessed.)")
+                                                sendPayload(it, if(console.version == "9.00") 9020 else 9021)
                                             }
                                             else -> return newFixedLengthResponse(
                                                 Response.Status.NOT_FOUND,
@@ -424,13 +466,24 @@ class MiServerImpl constructor(
                                             "received"
                                         )
                                     }
+                                    "/gh.bin" -> {
+                                        val path = uri.drop(1)
+                                        val readBytes = readBytes(path)
+                                        val byteArrayInputStream = ByteArrayInputStream(readBytes)
+                                        return newFixedLengthResponse(
+                                            Response.Status.OK,
+                                            "*/*",
+                                            byteArrayInputStream,
+                                            readBytes.size.toLong()
+                                        )
+                                    }
                                     else -> {
                                         val path = uri.drop(1)
                                         if (uri.contains(".manifest")) {
                                             if (!manager.cached) {
                                                 return newFixedLengthResponse(
                                                     Response.Status.OK,
-                                                    "/*",
+                                                    "*/*",
                                                     ""
                                                 )
                                             }
@@ -602,7 +655,7 @@ class MiServerImpl constructor(
         return type;
     }
 
-    private fun sendPayload(device: Device) {
+    private fun sendPayload(device: Device, port: Int = 9021) {
         payloads[device.version]?.let { payload ->
             Log.e(TAG, "Payload Size: ${payload.size}")
             if (payload.isEmpty()) return@let
