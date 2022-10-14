@@ -510,6 +510,7 @@ class MiServerImpl constructor(
                             }
                         }
                     } ?: run {
+
                         if (payloads.containsKey(uri)) {
                             return installPayload()
                         }
