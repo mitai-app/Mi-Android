@@ -73,15 +73,24 @@ object NetworkModule {
         return PS3MAPIImpl(service)
     }
 
+
     @Provides
     @Singleton
     fun provideGoldhenService(
         service: PSXService,
-        server: MiServer
+        server: MiServer,
+        rpi: RPI
     ): GoldhenImpl {
-        return GoldhenImpl(service, server)
+        return GoldhenImpl(service, rpi, server)
     }
 
+    @Provides
+    @Singleton
+    fun provideRPIServer(
+        service: SyncService
+    ): RemotePackageInstaller {
+        return RemotePackageInstaller(service)
+    }
 
     @Provides
     @Singleton

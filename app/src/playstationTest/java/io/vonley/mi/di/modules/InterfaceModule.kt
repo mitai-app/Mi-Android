@@ -61,6 +61,10 @@ abstract class InterfaceModule {
 
     @Binds
     @Singleton
+    abstract fun bindRPIServer(impl: RemotePackageInstaller): RPI
+
+    @Binds
+    @Singleton
     abstract fun bindClientService(impl: SyncServiceImpl): SyncService
 
     @Binds

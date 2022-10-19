@@ -12,9 +12,7 @@ import io.vonley.mi.di.annotations.*
 import io.vonley.mi.di.network.MiServer
 import io.vonley.mi.di.network.PSXService
 import io.vonley.mi.di.network.auth.OAuth2Authenticator
-import io.vonley.mi.di.network.impl.MiFTPClientImpl
-import io.vonley.mi.di.network.impl.MiServerImpl
-import io.vonley.mi.di.network.impl.PSXServiceImpl
+import io.vonley.mi.di.network.impl.*
 import io.vonley.mi.di.network.protocols.ccapi.CCAPIImpl
 import io.vonley.mi.di.network.protocols.goldenhen.Goldhen
 import io.vonley.mi.di.network.protocols.goldenhen.GoldhenImpl
@@ -76,9 +74,19 @@ object NetworkModule {
     @Singleton
     fun provideGoldhenService(
         service: PSXService,
-        server: MiServer
+        server: MiServer,
+        rpi: RPI
     ): GoldhenImpl {
-        return GoldhenImpl(service, server)
+        return GoldhenImpl(service, rpi, server)
+    }
+
+
+    @Provides
+    @Singleton
+    fun provideRPIServer(
+        service: SyncService
+    ): RemotePackageInstaller {
+        return RemotePackageInstaller(service)
     }
 
 
@@ -92,6 +100,7 @@ object NetworkModule {
     ): SyncServiceImpl {
         return SyncServiceImpl(context, database, manager, client)
     }
+
 
     @Provides
     @Singleton

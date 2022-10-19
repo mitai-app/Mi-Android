@@ -148,7 +148,8 @@ class PSXServiceImpl @Inject constructor(
                             callback.onWriting(payload)
                         }
                         socket.getOutputStream().use { out ->
-                            out.write(payload.data)
+                            payload.stream.copyTo(out, payload.size.toInt())
+                            //out.write(payload.data)
                             out.flush()
                         }
                         withContext(Dispatchers.Main) {

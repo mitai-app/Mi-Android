@@ -1,8 +1,12 @@
 package io.vonley.mi.di.network.protocols.goldenhen
 
+import android.os.Environment
+import io.vonley.mi.di.modules.NetworkModule
 import io.vonley.mi.di.network.MiServer
 import io.vonley.mi.di.network.PSXService
+import io.vonley.mi.di.network.auth.OAuth2Authenticator
 import io.vonley.mi.di.network.impl.PSXServiceImpl
+import io.vonley.mi.di.network.impl.RPI
 import io.vonley.mi.extensions.*
 import io.vonley.mi.models.Payload
 import io.vonley.mi.models.enums.Feature
@@ -10,23 +14,61 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import okhttp3.Headers
+import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.logging.HttpLoggingInterceptor
 import java.io.BufferedReader
 import java.io.OutputStream
 import java.net.Socket
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.coroutines.CoroutineContext
 
 class GoldhenImpl @Inject constructor(
     override val service: PSXService,
+    override val rpi: RPI,
     val server: MiServer
 ) : Goldhen {
 
     private val job = Job()
     override val coroutineContext: CoroutineContext
         get() = Dispatchers.IO + job
+
+    init {
+        rpi.start()
+    }
+
+    override val http: OkHttpClient = OkHttpClient.Builder()
+            .connectTimeout(5, TimeUnit.SECONDS)
+            .readTimeout(0, TimeUnit.SECONDS)
+            .writeTimeout(15, TimeUnit.SECONDS)
+            .cache(Cache(Environment.getDownloadCacheDirectory(), (20 * 1024 * 1024).toLong())).apply {
+            if (NetworkModule.LOG) {
+                this.addInterceptor(HttpLoggingInterceptor().also {
+                    it.level = HttpLoggingInterceptor.Level.HEADERS
+                }).addInterceptor(HttpLoggingInterceptor().also {
+                    it.level = HttpLoggingInterceptor.Level.BODY
+                })
+            }
+        }
+        .build()
+
+
+    fun longPost(url: String, body: RequestBody, headers: Headers): Response? {
+        val req = Request.Builder()
+            .url(url)
+            .headers(headers)
+            .post(body)
+            .build()
+        val execute = http.newCall(req)
+        return try {
+            execute.execute()
+        } catch (e: Throwable) {
+            "Something went wrong: ${e.message}".e(TAG, e)
+            null
+        }
+    }
 
     override suspend fun sendPayloads(
         callback: GoldhenCallback,
@@ -64,8 +106,9 @@ class GoldhenImpl @Inject constructor(
                         suspend fun send(socket: Socket): Pair<String, Payload> {
                             socket.getOutputStream().use { out ->
                                 writing("writing payload")
-                                out.write(payload.data)
-                                out.flush()
+                            //TODO: Fix
+                            //out.write(payload.data)
+                                //out.flush()
                             }
                             socket.close()
                             "Payload '${payload.name}' Sent!".i(TAG)
@@ -92,13 +135,13 @@ class GoldhenImpl @Inject constructor(
                             return@map fail("target does not have rpi")
                         }
                         "Target has Remote Package Installer".i(TAG)
-                        val urls = server.hostPackage(payload)
+                        val urls = rpi.hostPackage(payload)
                         val toJson =
                             PSXServiceImpl.RPI(PSXServiceImpl.RPI.Type.direct, urls).toJson()
                         val contentType = "application/json".toMediaType()
                         val requestBody = toJson.toRequestBody(contentType)
                         "json: $toJson".d(TAG)
-                        val res = post(
+                        val res = longPost(
                             "http://${service.target?.ip}:12800/api/install",
                             requestBody,
                             Headers.headersOf()

@@ -29,7 +29,7 @@ class PayloadAdapter : RecyclerView.Adapter<PayloadAdapter.PayloadHolder>(), Cor
     override fun onBindViewHolder(holder: PayloadHolder, position: Int) {
         val payload = payloads[position]
         holder.binding.vhPayloadFile.text = payload.name
-        holder.binding.vhPayloadInfo.text = "Bytes: ${payload.data.size}"
+        holder.binding.vhPayloadInfo.text = "Bytes: ${payload.size}"
         val color = when (payload.status) {
             -1 -> R.color.material_red
             0 -> R.color.grey_darker

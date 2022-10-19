@@ -1,0 +1,93 @@
+package io.vonley.mi.ui.common.log
+
+
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.*
+import io.vonley.mi.models.*
+
+
+@OptIn(ExperimentalUnitApi::class)
+@Composable
+fun LogCardBase(title: String?, description: String, background: Color) {
+    Card(
+        shape = RoundedCornerShape(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
+            .padding(16.dp, 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = background
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(24.dp, 16.dp)
+        ) {
+            if (title != null) {
+                Text(
+                    text = title,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = TextUnit(16F, TextUnitType.Sp),
+                    color = Color.White,
+                )
+                Spacer(modifier = Modifier.padding(0.dp))
+            }
+            Text(
+                text = description,
+                color = Color.White,
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalUnitApi::class)
+@Composable
+fun LogCard(log: MiCMDResponse) {
+    var title: String? = null
+    if (log.device != null) {
+        title = "${log.device!!.device} (${log.device!!.version}): ${log.device!!.ip}"
+    }
+    LogCardBase(title = title, description = log.response, background = log.data.cmd.bg)
+}
+
+
+@Preview(showSystemUi = true, showBackground = true)
+@Composable
+fun PreviewLogCardList() {
+    val device = Device("PS4","9.00", "192.168.11.45")
+    val logs = arrayOf(
+        MiCMDResponse("Initializing setup", MiResponse.Cmd(Minum.initiated), device),
+        MiCMDResponse("Starting Jailbreak", MiResponse.Cmd(Minum.started), device),
+        MiCMDResponse("Press X to Continue", MiResponse.Cmd(Minum.continuee), device),
+        MiCMDResponse("Mi is requesting the payload", MiResponse.Cmd(Minum.payloadReq), device),
+        MiCMDResponse("Payload Sent", MiResponse.Cmd(Minum.payload), device),
+        MiCMDResponse("Pending.....", MiResponse.Cmd(Minum.pending), device),
+        MiCMDResponse("Jailbreak complete", MiResponse.Cmd(Minum.success), device),
+        MiCMDResponse("Jailbreak failed", MiResponse.Cmd(Minum.failed), device),
+
+
+    )
+    Column(modifier = Modifier.verticalScroll(state = ScrollState(0))) {
+        logs.forEach {
+            LogCard(log = it)
+        }
+    }
+}
+
+@Preview(showSystemUi = true, showBackground = true)
+@Composable
+fun PreviewLogCard() {
+    val device = Device("PS4","9.00", "192.168.11.45")
+    LogCard(log = MiCMDResponse("Jailbreak complete", MiResponse.Cmd(Minum.success), device))
+}

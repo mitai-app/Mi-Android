@@ -31,6 +31,7 @@ import io.vonley.mi.ui.main.MainContract
 import io.vonley.mi.ui.main.home.dialog
 import io.vonley.mi.ui.main.payload.adapters.PayloadAdapter
 import okhttp3.Response
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import javax.inject.Inject
 
@@ -157,9 +158,15 @@ class PayloadFragment : Fragment(), ActivityResultCallback<ActivityResult>, Payl
                         Log.e("TAG", "uri: ${uri.path}, name: $filename")
                     }
                     val bos = ByteArrayOutputStream()
-                    val stream = contentResolver.openInputStream(uri)?.readBytes()
+                    val stream = contentResolver.openInputStream(uri)
+
+                    val sizeOfFile = contentResolver.query(uri, null, null, null)?.use { cursor ->
+                        val size = cursor.getColumnIndex(OpenableColumns.SIZE)
+                        cursor.moveToFirst()
+                        cursor.getLong(size)
+                    }
                     stream?.let {
-                        payloadAdapter.add(Payload(name, it))
+                        payloadAdapter.add(Payload(name, ByteArrayInputStream(it.readBytes()), size=sizeOfFile?: throw  java.lang.Exception("WHAT THE FUCK")))
                     }?: run {
                         Snackbar.make(
                             requireView(),

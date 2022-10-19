@@ -218,6 +218,7 @@ class MiServerImpl constructor(
             Pair("9.00", context.assets.open("payloads/goldhen/900.bin").readBytes())
         )
     }
+
     private val root: String get() = console!!.jbPath
     private var ready: Boolean = false
     private var console: Device? = null
@@ -326,10 +327,10 @@ class MiServerImpl constructor(
                     fun installPayload(): Response {
                         val bytes = payloads[uri]!!
                         "PAYLOAD DOES CONTAIN URI: $uri, size: ${bytes.size}".e("BOO YEAH")
-                        return newFixedLengthResponse(
+                        return newChunkedResponse(
                             Response.Status.OK,
-                            "application/x-newton-compatible-pkg",
-                            ByteArrayInputStream(bytes), bytes.size.toLong()
+                            "application/octet-stream",
+                            ByteArrayInputStream(bytes)
                         )
                     }
                     console?.let {
@@ -343,10 +344,13 @@ class MiServerImpl constructor(
                                 if (this@MiServerImpl.console?.ip != it.ip) this@MiServerImpl.console = it
                                 when (uri) {
                                     "/" -> {
+                                        val read = read("index.html")
+                                            .replace("{{BODY}}", "Mi")
+                                            .replace("{{TITLE}}", "Mi JB Host")
                                         return newFixedLengthResponse(
                                             Response.Status.OK,
                                             "text/html",
-                                            read("index.html")
+                                            read
                                         )
                                     }
                                     "/mi.js" -> {
@@ -386,7 +390,7 @@ class MiServerImpl constructor(
                                         val cmd = mi.data.cmd
                                         val message = mi.response
                                         when (cmd) {
-                                            "jb.initiated" -> {
+                                            Minum.initiated -> {
                                                 callback.onLog("[JB:Initiated] $message")
                                                 val params = arrayOf(
                                                     Pair("console_device", it.device),
@@ -395,7 +399,7 @@ class MiServerImpl constructor(
                                                     Pair("from", MiServer::class.java.name)
                                                 )
                                                 Mi.log(JB_INITIATED, *params)}
-                                            "jb.continue" -> {
+                                            Minum.continuee -> {
                                                 callback.onLog("[JB:Continue] $message")
                                                 val params = arrayOf(
                                                     Pair("console_device", it.device),
@@ -404,7 +408,7 @@ class MiServerImpl constructor(
                                                     Pair("from", MiServer::class.java.name)
                                                 )
                                                 Mi.log(JB_CONTINUE, *params)}
-                                            "jb.payload.request" -> {
+                                            Minum.payloadReq -> {
                                                 callback.onLog("[JB:Payload:Request] $message")
                                                 val params = arrayOf(
                                                     Pair("console_device", it.device),
@@ -414,7 +418,7 @@ class MiServerImpl constructor(
                                                 )
                                                 Mi.log(JB_PAYLOAD_REQUEST, *params)
                                             }
-                                            "jb.started" -> {
+                                            Minum.started -> {
                                                 callback.onLog("[JB:Started] $message")
                                                 val params = arrayOf(
                                                     Pair("console_device", it.device),
@@ -424,7 +428,7 @@ class MiServerImpl constructor(
                                                 )
                                                 Mi.log(JB_STARTED, *params)
                                             }
-                                            "jb.success" -> {
+                                            Minum.success -> {
                                                 callback.onLog("[Status] Enjoy!")
                                                 callback.onJailbreakSucceeded(message)
                                                 val params = arrayOf(
@@ -435,7 +439,7 @@ class MiServerImpl constructor(
                                                 )
                                                 Mi.log(JB_SUCCESS, *params)
                                             }
-                                            "jb.failed" -> {
+                                            Minum.failed -> {
                                                 callback.onLog("[JB:Failed] Somethings not right...")
                                                 callback.onJailbreakFailed(message)
                                                 val params = arrayOf(
@@ -446,11 +450,11 @@ class MiServerImpl constructor(
                                                 )
                                                 Mi.log(JB_FAILURE, *params)
                                             }
-                                            "send.payload" -> {
+                                            Minum.payload -> {
                                                 callback.onLog("[Send:Payload] Initializing Payload sender (PS4 about to get blessed.)")
                                                 sendPayload(it, if(console.version == "9.00") 9090 else 9021)
                                             }
-                                            "send.pending" -> {
+                                            Minum.pending -> {
                                                 callback.onLog("[Send:Pending] Initializing Payload sender (PS4 about to get blessed.)")
                                                 sendPayload(it, if(console.version == "9.00") 9020 else 9021)
                                             }
@@ -490,10 +494,16 @@ class MiServerImpl constructor(
                                         }
                                         Log.e(TAG, "URI: $uri")
 
+                                        var read = read(path)
+                                        if (path.contains("index.html")) {
+                                            read = read
+                                                .replace("{{BODY}}", "Mi")
+                                                .replace("{{TITLE}}", "Mi JB Host")
+                                        }
                                         return newFixedLengthResponse(
                                             Response.Status.OK,
                                             mime,
-                                            read(path)
+                                            read
                                         )
                                     }
                                 }
@@ -575,7 +585,8 @@ class MiServerImpl constructor(
     override fun hostPackage(vararg payloads: Payload): Array<String> {
         val urls = payloads.map { payload ->
             val path = "/pkg/${payload.name}"
-            this.payloads[path] = payload.data
+            //this.payloads[path] = payload
+            //TODO: Fix
             "http://${service.localDeviceIp}:${manager.jbPort}$path"
         }
         return urls.toTypedArray()

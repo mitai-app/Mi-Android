@@ -7,9 +7,7 @@ import dagger.hilt.components.SingletonComponent
 import io.vonley.mi.di.network.MiFTPClient
 import io.vonley.mi.di.network.MiServer
 import io.vonley.mi.di.network.PSXService
-import io.vonley.mi.di.network.impl.MiFTPClientImpl
-import io.vonley.mi.di.network.impl.MiServerImpl
-import io.vonley.mi.di.network.impl.PSXServiceImpl
+import io.vonley.mi.di.network.impl.*
 import io.vonley.mi.di.network.protocols.ccapi.CCAPI
 import io.vonley.mi.di.network.protocols.ccapi.CCAPIImpl
 import io.vonley.mi.di.network.protocols.goldenhen.Goldhen
@@ -56,6 +54,10 @@ abstract class InterfaceModule {
     @Binds
     @Singleton
     abstract fun bindMiServer(impl: MiServerImpl): MiServer
+
+    @Binds
+    @Singleton
+    abstract fun bindRPIServer(impl: RemotePackageInstaller): RPI
 
     @Binds
     @Singleton
