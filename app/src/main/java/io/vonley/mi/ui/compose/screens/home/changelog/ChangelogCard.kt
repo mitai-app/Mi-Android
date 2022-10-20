@@ -1,4 +1,4 @@
-package io.vonley.mi.ui.common.changelog
+package io.vonley.mi.ui.compose.screens.home.changelog
 
 
 import androidx.compose.foundation.ScrollState

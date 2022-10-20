@@ -1,5 +1,6 @@
 package io.vonley.mi.ui.main.console.domain.model
 
+import io.vonley.mi.Constants
 import io.vonley.mi.ui.main.console.data.remote.SyncService
 import io.vonley.mi.ui.main.console.data.remote.get
 import io.vonley.mi.ui.main.console.data.remote.set
@@ -109,3 +110,6 @@ val List<Feature>.isPs3
 
 val List<Feature>.isPs4
     get() = this.any { p -> p  in PlatformType.PS4.features }
+
+val Client.color
+    get() = if (this.activeFeatures.isPs4) Constants.Color.QUATERNARY else if (this.activeFeatures.isPs3) Constants.Color.QUINARY else Constants.Color.SECONDARY

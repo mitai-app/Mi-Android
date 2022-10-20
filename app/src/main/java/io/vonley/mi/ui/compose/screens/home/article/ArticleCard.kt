@@ -1,4 +1,4 @@
-package io.vonley.mi.ui.common.article
+package io.vonley.mi.ui.compose.screens.home.article
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState

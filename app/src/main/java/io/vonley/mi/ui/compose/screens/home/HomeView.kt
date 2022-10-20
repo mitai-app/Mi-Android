@@ -2,36 +2,53 @@ package io.vonley.mi.ui.compose.screens
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import io.vonley.mi.Constants
-import io.vonley.mi.ui.common.article.ArticleCard
-import io.vonley.mi.ui.common.log.LogCard
-import io.vonley.mi.ui.common.log.LogCardBase
+import io.vonley.mi.ui.compose.screens.home.article.ArticleCard
+import io.vonley.mi.ui.compose.screens.home.log.LogCardBase
 
 @Composable
 fun HomeView() {
-    Column {
-        ArticleList()
-        LogList()
+    Column() {
+        ArticleList() {
+            LogList()
+        }
     }
 }
 
 @Composable
 fun LogList() {
-    Column(modifier = Modifier.verticalScroll(state = ScrollState(0))) {
-        LogCardBase(title = "Connect to 192.168.11.248:8080", description = "Connect to this ip to start jailbreak process.", background = Constants.Color.QUATERNARY)
-    }
+    Text(
+        text="Logs",
+        color= Color.Black,
+        modifier = Modifier.padding(16.dp, 8.dp),
+        fontWeight = FontWeight.Bold,
+        fontStyle = FontStyle.Normal,
+        fontSize = 20.sp
+    )
+    LogCardBase(title = "Connect to http://192.168.11.248:8080", description = "", background = Constants.Color.QUATERNARY)
 }
 
 @Composable
-fun ArticleList() {
-    Column(modifier = Modifier.verticalScroll(state = ScrollState(0))) {
+inline fun ArticleList(content: @Composable () -> Unit) {
+    Column(
+        modifier = Modifier.verticalScroll(state = ScrollState(0))
+    ) {
         Constants.ARTICLES.forEach {
             ArticleCard(article = it)
         }
+        content()
     }
 }
 

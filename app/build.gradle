@@ -12,7 +12,7 @@ plugins {
 
 android {
     compileSdk 33
-    ndkVersion '25.0.8775105'
+    ndkVersion '25.1.8937393'
     defaultConfig {
         applicationId "io.vonley.mi"
         minSdk 21
@@ -94,7 +94,6 @@ dependencies {
 
     // Android Studio Preview support
     implementation 'androidx.compose.ui:ui-tooling-preview:1.2.1'
-    implementation 'androidx.core:core-ktx:+'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.5.1'
     debugImplementation 'androidx.compose.ui:ui-tooling:1.2.1'
 
@@ -149,16 +148,16 @@ dependencies {
 
     implementation "commons-net:commons-net:3.6"
 
-    implementation 'com.google.code.gson:gson:2.9.0'
+    implementation 'com.google.code.gson:gson:2.9.1'
 
-    kapt 'com.github.bumptech.glide:compiler:4.13.2'
-    implementation 'com.github.bumptech.glide:glide:4.13.2'
-    implementation 'com.github.bumptech.glide:okhttp3-integration:4.13.2'
+    kapt 'com.github.bumptech.glide:compiler:4.14.2'
+    implementation 'com.github.bumptech.glide:glide:4.14.2'
+    implementation 'com.github.bumptech.glide:okhttp3-integration:4.14.2'
 
-    implementation 'org.jsoup:jsoup:1.15.2'
+    implementation 'org.jsoup:jsoup:1.15.3'
     implementation 'de.hdodenhof:circleimageview:3.1.0'
     implementation 'javax.inject:javax.inject:1'
-    implementation 'net.danlew:android.joda:2.10.14'
+    implementation 'net.danlew:android.joda:2.12.0'
 
     def room = "2.4.3"
     kapt "androidx.room:room-compiler:$room"

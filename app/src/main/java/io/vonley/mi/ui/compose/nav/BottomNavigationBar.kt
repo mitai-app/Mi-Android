@@ -13,6 +13,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import io.vonley.mi.Constants
 import io.vonley.mi.ui.compose.TabItem
 
@@ -33,7 +34,10 @@ fun BottomNavigationBar(navController: NavHostController) {
         val currentRoute = navBackStackEntry?.destination?.route
         items.forEach { item ->
             BottomNavigationItem(
-                icon = { Icon(painterResource(id = item.icon), contentDescription = item.title) },
+                icon = {
+                    Icon(painterResource(id = item.icon),
+                    contentDescription = item.title)
+                       },
                 label = {
                     Text(
                         text = item.title,
@@ -72,5 +76,7 @@ fun BottomNavigationBar(navController: NavHostController) {
 @Preview(showBackground = true)
 @Composable
 fun BottomNavigationBarPreview() {
-    //BottomNavigationBar(navController)
+
+    val navController = rememberNavController()
+    BottomNavigationBar(navController)
 }

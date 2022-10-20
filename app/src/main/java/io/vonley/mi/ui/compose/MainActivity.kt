@@ -17,9 +17,9 @@ import androidx.navigation.compose.rememberNavController
 import io.vonley.mi.ui.compose.nav.BottomNavigationBar
 import io.vonley.mi.ui.compose.nav.TopBar
 import io.vonley.mi.ui.compose.screens.*
-import io.vonley.mi.ui.compose.screens.consoles.ConsoleView
+import io.vonley.mi.ui.compose.screens.consoles.ConsolesView
 import io.vonley.mi.ui.compose.screens.ftp.FtpView
-import io.vonley.mi.ui.compose.screens.packages.PackageView
+import io.vonley.mi.ui.compose.screens.packages.RepositoryView
 import io.vonley.mi.ui.compose.screens.settings.SettingsView
 
 class MainActivity : ComponentActivity() {
@@ -54,10 +54,10 @@ fun Navigation(navController: NavHostController) {
             HomeView()
         }
         composable(TabItem.Consoles.route) {
-            ConsoleView()
+            ConsolesView()
         }
         composable(TabItem.Packages.route) {
-            PackageView()
+            RepositoryView()
         }
         composable(TabItem.Ftp.route) {
             FtpView()
