@@ -43,15 +43,16 @@ fun LogCardBase(title: String?, description: String, background: Color) {
                 )
                 Spacer(modifier = Modifier.padding(0.dp))
             }
-            Text(
-                text = description,
-                color = Color.White,
-            )
+            if (description.isNotEmpty()) {
+                Text(
+                    text = description,
+                    color = Color.White,
+                )
+            }
         }
     }
 }
 
-@OptIn(ExperimentalUnitApi::class)
 @Composable
 fun LogCard(log: MiCMDResponse) {
     var title: String? = null
