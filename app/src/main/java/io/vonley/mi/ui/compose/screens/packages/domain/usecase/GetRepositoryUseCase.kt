@@ -6,7 +6,6 @@ import io.vonley.mi.ui.compose.screens.packages.domain.repository.PackageReposit
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.single
 import javax.inject.Inject
 
 class GetRepositoryUseCase @Inject constructor(
@@ -23,7 +22,8 @@ class GetRepositoryUseCase @Inject constructor(
     operator fun invoke(link: String): Flow<Resource<List<Repo>>> = flow {
         emit(Resource.Loading())
         val repo = repository.getRepository(link)
-        val value = repo.single()
-        emit(value)
+        emit(repo)
+    }.catch {
+        emit(Resource.Error("Repo not found!", emptyList()))
     }
 }

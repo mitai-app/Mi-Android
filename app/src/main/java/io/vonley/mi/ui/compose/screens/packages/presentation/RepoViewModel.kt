@@ -10,6 +10,7 @@ import io.vonley.mi.common.Resource
 import io.vonley.mi.ui.compose.screens.packages.domain.usecase.GetRepositoryUseCase
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.single
 import javax.inject.Inject
 
 @HiltViewModel
@@ -17,7 +18,7 @@ class RepoViewModel @Inject constructor(
     private val repoUseCase: GetRepositoryUseCase,
 ) : ViewModel() {
 
-    private val _repoState: MutableState<RepoState> = mutableStateOf(RepoState(true, emptyList()))
+    private val _repoState: MutableState<RepoState> = mutableStateOf(RepoState.Loading)
     val repoState: State<RepoState> get() = _repoState
 
     init {
@@ -28,13 +29,13 @@ class RepoViewModel @Inject constructor(
         repoUseCase().onEach { result ->
             when (result) {
                 is Resource.Success -> {
-                    _repoState.value = RepoState(false, result.data ?: emptyList())
+                    _repoState.value = RepoState.Success(result.data ?: emptyList())
                 }
                 is Resource.Error -> {
-                    _repoState.value = RepoState(error = result.status ?: "An unexpected error occurred", repos = result.data ?: emptyList())
+                    _repoState.value = RepoState.Error(error = result.status ?: "An unexpected error occurred")
                 }
                 is Resource.Loading -> {
-                    _repoState.value = RepoState(loading = true)
+                    _repoState.value = RepoState.Loading
                 }
             }
         }.launchIn(viewModelScope)
@@ -44,15 +45,13 @@ class RepoViewModel @Inject constructor(
         repoUseCase(search).onEach { result ->
             when (result) {
                 is Resource.Success -> {
-                    _repoState.value = RepoState(false, result.data ?: emptyList())
+                    _repoState.value = RepoState.Success(result.data ?: emptyList())
                 }
                 is Resource.Error -> {
-                    _repoState.value = RepoState(
-                        error = result.status ?: "An unexpected error occurred"
-                    )
+                    _repoState.value = RepoState.Error(error = result.status ?: "An unexpected error occurred")
                 }
                 is Resource.Loading -> {
-                    _repoState.value = RepoState(loading = true)
+                    _repoState.value = RepoState.Loading
                 }
             }
         }.launchIn(viewModelScope)

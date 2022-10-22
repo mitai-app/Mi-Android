@@ -5,10 +5,16 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.TextField
+import androidx.compose.material.TextFieldColors
+import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -17,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
 import io.vonley.mi.Constants
+import io.vonley.mi.extensions.isLink
 import io.vonley.mi.ui.compose.screens.packages.data.remote.dto.Package
 import io.vonley.mi.ui.compose.screens.packages.data.remote.dto.PackageType
 import io.vonley.mi.ui.compose.screens.packages.data.remote.dto.Repo
@@ -31,17 +38,79 @@ fun RepositoryView() {
 
 @Composable
 fun RepoViewState(state: RepoState) {
-    Column(modifier = Modifier.verticalScroll(ScrollState(0))) {
-        if (state.loading) {
-            LoadingRepo()
-        } else {
-            if (state.repos.isNotEmpty()) {
-                RepoListView(state.repos)
-            } else {
-                EmptyRepo()
+    val search = remember {
+        mutableStateOf("Example")
+    }
+    Column {
+        Row() {
+            TextField(
+                value = search.value,
+                modifier= Modifier
+                    .padding(16.dp, 16.dp, 16.dp, 8.dp)
+                    .fillMaxWidth(),
+                colors = TextFieldDefaults
+                    .textFieldColors(
+                        backgroundColor = Color.White,
+                        textColor = Color.Black
+                    ),
+                onValueChange = {
+                    search.value = it
+                },
+                placeholder = {
+                    Text("Enter repo url or search by packages...", color = Color.Gray)
+                },
+                maxLines = 1,
+                shape = RoundedCornerShape(12.dp)
+            )
+        }
+        if (!search.value.isLink()) {
+            AddRepo(link = search.value)
+        }
+        Column(modifier = Modifier.verticalScroll(ScrollState(0))) {
+            when (state) {
+                is RepoState.Loading -> {
+                    LoadingRepo()
+                }
+                is RepoState.Success -> {
+                    if (state.repos.isNotEmpty()) {
+                        RepoListView(state.repos)
+                    } else {
+                        EmptyRepo()
+                    }
+                }
+                is RepoState.Error -> {
+                    ErrorRepo(state.error)
+                }
             }
         }
     }
+}
+
+@Composable
+fun AddRepo(link: String) {
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(100.dp)
+            .padding(16.dp, 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Constants.Color.TERTIARY
+        )
+    ) {
+        Column {
+            Spacer(modifier = Modifier.padding(8.dp))
+            Text(
+                text = "Add Repository",
+                modifier = Modifier.padding(16.dp, 0.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun ErrorRepo(error: String) {
+
 }
 
 @Composable
@@ -118,10 +187,10 @@ fun RepoCard(repo: Repo) {
                 modifier = Modifier.padding(16.dp, 0.dp)
             )
             Image(
-                painter= rememberAsyncImagePainter(model = repo.banner),
-                contentDescription=null,
-                contentScale=ContentScale.Crop,
-                modifier= Modifier
+                painter = rememberAsyncImagePainter(model = repo.banner),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
                     .fillMaxWidth()
                     .height(128.dp)
             )
@@ -132,13 +201,13 @@ fun RepoCard(repo: Repo) {
 @Preview
 @Composable
 fun PreviewLoadingState() {
-    RepoViewState(RepoState(true, emptyList(), ""))
+    RepoViewState(RepoState.Loading)
 }
 
 @Preview
 @Composable
 fun PreviewEmpty() {
-    RepoViewState(RepoState(false, emptyList(), ""))
+    RepoViewState(RepoState.Success())
 }
 
 @Preview
@@ -183,10 +252,10 @@ fun PreviewRepoView() {
             )
         )
     )
-    val state = RepoState(
-        false, repos = arrayListOf(
+    val state = RepoState.Success(
+        repos = arrayListOf(
             elements, elements
-        ), ""
+        )
     )
     RepoViewState(state)
 }

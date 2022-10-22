@@ -1,14 +1,10 @@
 package io.vonley.mi.ui.compose.screens.packages.data.repository
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.asFlow
-import androidx.lifecycle.map
 import io.vonley.mi.common.Resource
 import io.vonley.mi.ui.compose.screens.packages.data.local.PackageRepositoryDao
 import io.vonley.mi.ui.compose.screens.packages.data.remote.RepoService
 import io.vonley.mi.ui.compose.screens.packages.data.remote.dto.Repo
 import io.vonley.mi.ui.compose.screens.packages.domain.repository.PackageRepository
-import kotlinx.coroutines.flow.*
 import javax.inject.Inject
 
 class PackageRepositoryImpl @Inject constructor(
@@ -37,17 +33,12 @@ class PackageRepositoryImpl @Inject constructor(
         return false
     }
 
-    override suspend fun getRepository(link: String): Flow<Resource<List<Repo>>> {
+    override suspend fun getRepository(link: String): Resource<List<Repo>> {
         return if (fetch(link)) {
             val get = dao.get(link)
-            flow {
-                val data = get.single()
-                emit(Resource.Success(data))
-            }
+            return Resource.Success(get)
         } else {
-            flow {
-                emit(Resource.Error("Error", null))
-            }
+            Resource.Error("Error", null)
         }
     }
 
