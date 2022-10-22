@@ -14,14 +14,16 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import dagger.hilt.android.AndroidEntryPoint
 import io.vonley.mi.ui.compose.nav.BottomNavigationBar
 import io.vonley.mi.ui.compose.nav.TopBar
 import io.vonley.mi.ui.compose.screens.*
 import io.vonley.mi.ui.compose.screens.consoles.ConsolesView
 import io.vonley.mi.ui.compose.screens.ftp.FtpView
-import io.vonley.mi.ui.compose.screens.packages.RepositoryView
+import io.vonley.mi.ui.compose.screens.packages.presentation.RepositoryView
 import io.vonley.mi.ui.compose.screens.settings.SettingsView
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

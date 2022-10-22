@@ -11,9 +11,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import io.vonley.mi.models.enums.PlatformType
-import io.vonley.mi.models.enums.ConsoleTypeConverter
+import io.vonley.mi.room.converters.ConsoleTypeConverter
 import io.vonley.mi.models.enums.Feature
-import io.vonley.mi.models.enums.FeaturesConverter
+import io.vonley.mi.room.converters.FeaturesConverter
 import java.net.Socket
 import kotlin.coroutines.CoroutineContext
 

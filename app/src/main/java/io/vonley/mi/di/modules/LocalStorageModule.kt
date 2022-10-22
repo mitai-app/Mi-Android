@@ -14,6 +14,7 @@ import io.vonley.mi.di.annotations.SharedPreferenceStorage
 import io.vonley.mi.helpers.Voice
 import io.vonley.mi.helpers.impl.VoiceImpl
 import io.vonley.mi.persistence.AppDatabase
+import io.vonley.mi.ui.compose.screens.packages.data.local.PackageRepositoryDao
 import io.vonley.mi.ui.main.console.data.local.ConsoleDao
 import io.vonley.mi.ui.main.console.data.remote.SyncService
 import io.vonley.mi.ui.main.console.data.repository.ConsoleRepositoryImpl
@@ -49,6 +50,12 @@ object LocalStorageModule {
     @Singleton
     fun provideConsoleDao(appDatabase: AppDatabase): ConsoleDao {
         return appDatabase.consoleDao()
+    }
+
+    @Provides
+    @Singleton
+    fun providePackageRepositoryDao(appDatabase: AppDatabase): PackageRepositoryDao {
+        return appDatabase.repoDao()
     }
 
     /**

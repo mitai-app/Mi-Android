@@ -5,7 +5,7 @@ import io.vonley.mi.R
 import io.vonley.mi.ui.compose.screens.*
 import io.vonley.mi.ui.compose.screens.consoles.ConsolesView
 import io.vonley.mi.ui.compose.screens.ftp.FtpView
-import io.vonley.mi.ui.compose.screens.packages.RepositoryView
+import io.vonley.mi.ui.compose.screens.packages.presentation.RepositoryView
 import io.vonley.mi.ui.compose.screens.settings.SettingsView
 
 typealias ComposableFun = @Composable () -> Unit

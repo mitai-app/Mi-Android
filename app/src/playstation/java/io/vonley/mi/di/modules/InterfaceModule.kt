@@ -18,6 +18,8 @@ import io.vonley.mi.di.network.protocols.ps3mapi.PS3MAPI
 import io.vonley.mi.di.network.protocols.ps3mapi.PS3MAPIImpl
 import io.vonley.mi.di.network.protocols.webman.WebManImpl
 import io.vonley.mi.di.network.protocols.webman.Webman
+import io.vonley.mi.ui.compose.screens.packages.data.repository.PackageRepositoryImpl
+import io.vonley.mi.ui.compose.screens.packages.domain.repository.PackageRepository
 import io.vonley.mi.ui.main.console.data.remote.SyncService
 import io.vonley.mi.ui.main.console.data.remote.SyncServiceImpl
 import javax.inject.Singleton
@@ -66,5 +68,9 @@ abstract class InterfaceModule {
     @Binds
     @Singleton
     abstract fun bindPS4Client(impl: PSXServiceImpl): PSXService
+
+    @Binds
+    @Singleton
+    abstract fun bindRepoModule(impl: PackageRepositoryImpl): PackageRepository
 
 }

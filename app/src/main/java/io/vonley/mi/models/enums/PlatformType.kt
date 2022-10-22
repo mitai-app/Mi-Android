@@ -4,11 +4,8 @@ import android.content.Context
 import android.os.Parcelable
 import androidx.annotation.StringRes
 import androidx.room.Entity
-import androidx.room.TypeConverter
-import com.google.gson.GsonBuilder
 import io.vonley.mi.R
 import io.vonley.mi.ui.main.console.data.remote.SyncService
-import io.vonley.mi.extensions.fromJson
 import io.vonley.mi.ui.main.console.domain.model.Client
 import kotlinx.android.parcel.Parcelize
 import okhttp3.Request
@@ -121,41 +118,3 @@ enum class Feature(
         val allowedToOpen: Array<Feature> = arrayOf(PS3MAPI, CCAPI, WEBMAN, ORBISAPI, KLOG)
     }
 }
-
-class ProtocolTypeConverter {
-
-    @TypeConverter
-    fun toType(value: String): Protocol = enumValueOf(value)
-
-    @TypeConverter
-    fun fromType(value: Protocol) = value.name
-
-}
-
-class ConsoleTypeConverter {
-
-    @TypeConverter
-    fun toType(value: Int): PlatformType = enumValues<PlatformType>()[value]
-
-    @TypeConverter
-    fun fromType(value: PlatformType) = value.ordinal
-
-}
-
-class FeaturesConverter {
-
-    @TypeConverter
-    fun toType(features: String): List<Feature> {
-        return GsonBuilder().create().fromJson<List<Int>>(features)
-            .map { enumValues<Feature>()[it] }
-    }
-
-    @TypeConverter
-    fun fromType(values: List<Feature>): String {
-        val transform: (Feature) -> Int = { it.ordinal }
-        val map = values.map(transform)
-        return GsonBuilder().create().toJson(map)
-    }
-
-}
-
