@@ -1,5 +1,8 @@
 package io.vonley.mi.ui.compose.screens.packages.data.repository
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.asFlow
+import androidx.lifecycle.map
 import io.vonley.mi.common.Resource
 import io.vonley.mi.ui.compose.screens.packages.data.local.PackageRepositoryDao
 import io.vonley.mi.ui.compose.screens.packages.data.remote.RepoService
@@ -48,27 +51,20 @@ class PackageRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getRepositories(): Flow<Resource<List<Repo>>> {
-        if(dao.count() == 0) {
-            if (!getDefaultRepo()) {
-                return flow {
-                    emit(Resource.Error("No value", emptyList()))
-                }
-            }
-        } else {
-            val all = dao.getAll()
-            all.single().forEach {
-                fetch(it.link)
-            }
-        }
-        return flow {
-            dao.getAll().onEach {
-                emit(Resource.Success(it))
-            }.collect()
-        }
+    override suspend fun count(): Int {
+        return dao.count()
     }
 
-    private suspend fun getDefaultRepo(): Boolean {
+    override suspend fun getRepositories(): Resource<List<Repo>> {
+        if(dao.count() == 0) {
+            if (!getDefaultRepo()) {
+                return Resource.Error("No value", emptyList())
+            }
+        }
+        return Resource.Success(dao.getAll())
+    }
+
+    override suspend fun getDefaultRepo(): Boolean {
         return fetch("https://raw.githubusercontent.com/mitai-app/versioning/main/packages.json")
     }
 

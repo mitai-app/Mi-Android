@@ -1,6 +1,9 @@
 package io.vonley.mi.ui.compose.screens.packages.presentation
 
 import android.app.Application
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.vonley.mi.common.Resource
@@ -14,24 +17,24 @@ class RepoViewModel @Inject constructor(
     private val repoUseCase: GetRepositoryUseCase,
 ) : ViewModel() {
 
-    private val _newThisMonth = MutableLiveData<RepoState>()
-    val newThisMonth: LiveData<RepoState> get() = _newThisMonth
+    private val _repoState: MutableState<RepoState> = mutableStateOf(RepoState(true, emptyList()))
+    val repoState: State<RepoState> get() = _repoState
 
     init {
-        getComics()
+        getRepos()
     }
 
-    fun getComics() {
+    fun getRepos() {
         repoUseCase().onEach { result ->
             when (result) {
                 is Resource.Success -> {
-                    _newThisMonth.value = RepoState(false, result.data ?: emptyList())
+                    _repoState.value = RepoState(false, result.data ?: emptyList())
                 }
                 is Resource.Error -> {
-                    _newThisMonth.value = RepoState(error = result.status ?: "An unexpected error occurred")
+                    _repoState.value = RepoState(error = result.status ?: "An unexpected error occurred", repos = result.data ?: emptyList())
                 }
                 is Resource.Loading -> {
-                    _newThisMonth.value = RepoState(loading = true)
+                    _repoState.value = RepoState(loading = true)
                 }
             }
         }.launchIn(viewModelScope)
@@ -41,15 +44,15 @@ class RepoViewModel @Inject constructor(
         repoUseCase(search).onEach { result ->
             when (result) {
                 is Resource.Success -> {
-                    _newThisMonth.value = RepoState(false, result.data ?: emptyList())
+                    _repoState.value = RepoState(false, result.data ?: emptyList())
                 }
                 is Resource.Error -> {
-                    _newThisMonth.value = RepoState(
+                    _repoState.value = RepoState(
                         error = result.status ?: "An unexpected error occurred"
                     )
                 }
                 is Resource.Loading -> {
-                    _newThisMonth.value = RepoState(loading = true)
+                    _repoState.value = RepoState(loading = true)
                 }
             }
         }.launchIn(viewModelScope)

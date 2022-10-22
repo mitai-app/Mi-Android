@@ -25,10 +25,7 @@ import io.vonley.mi.ui.compose.screens.packages.data.remote.dto.Repo
 @Composable
 fun RepositoryView() {
     val vm = hiltViewModel<RepoViewModel>()
-    var repoState by remember { mutableStateOf(RepoState(true)) }
-    vm.newThisMonth.observeForever { state ->
-        repoState = state
-    }
+    val repoState by remember { vm.repoState }
     RepoViewState(state = repoState)
 }
 

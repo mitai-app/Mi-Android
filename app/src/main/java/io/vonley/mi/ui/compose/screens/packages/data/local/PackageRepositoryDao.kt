@@ -1,5 +1,6 @@
 package io.vonley.mi.ui.compose.screens.packages.data.local
 
+import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Query
 import io.vonley.mi.persistence.IDao
@@ -16,7 +17,7 @@ interface PackageRepositoryDao : IDao<Repo, String> {
     fun getByName(name_: String): Flow<List<Repo>>
 
     @Query("SELECT * FROM Repo WHERE 1")
-    fun getAll(): Flow<List<Repo>>
+    suspend fun getAll(): List<Repo>
 
     @Query("SELECT COUNT(*) FROM Repo")
     suspend fun count(): Int
