@@ -1,4 +1,4 @@
-package io.vonley.mi.ui.main.console.domain.model
+package io.vonley.mi.ui.compose.screens.consoles.domain.model
 
 import android.os.Parcelable
 import androidx.room.Entity

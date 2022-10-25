@@ -13,7 +13,7 @@ interface PackageRepositoryDao : IDao<Repo, String> {
     @Query("SELECT * FROM Repo WHERE link LIKE '%' || :link_ || '%'")
     suspend fun get(link_: String): List<Repo>
 
-    @Query("SELECT * FROM Repo WHERE author LIKE '%' || :name_ || '%'")
+    @Query("SELECT * FROM Repo WHERE author LIKE '%' || :name_ || '%' or title LIKE '%' || :name_ || '%'")
     fun getByName(name_: String): Flow<List<Repo>>
 
     @Query("SELECT * FROM Repo WHERE 1")

@@ -5,7 +5,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import io.vonley.mi.di.network.MiServer
-import io.vonley.mi.ui.main.console.data.remote.SyncService
+import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
 import javax.inject.Inject
 import kotlin.coroutines.CoroutineContext
 

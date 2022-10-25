@@ -26,7 +26,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.vonley.mi.R
 import io.vonley.mi.base.BaseContract
 import io.vonley.mi.databinding.ActivityMainBinding
-import io.vonley.mi.ui.main.console.domain.model.Console
+import io.vonley.mi.ui.compose.screens.consoles.domain.model.Console
 import io.vonley.mi.ui.main.console.presentation.ConsoleContract
 import io.vonley.mi.ui.main.ftp.FTPContract
 import io.vonley.mi.ui.main.home.HomeContract

@@ -1,4 +1,4 @@
-package io.vonley.mi.ui.main.console.data.remote
+package io.vonley.mi.ui.compose.screens.consoles.data.remote
 
 import android.net.Network
 import android.net.NetworkInfo
@@ -8,7 +8,7 @@ import androidx.lifecycle.LiveData
 import io.vonley.mi.di.network.handlers.ClientHandler
 import io.vonley.mi.di.network.listeners.OnConsoleListener
 import io.vonley.mi.models.enums.Feature
-import io.vonley.mi.ui.main.console.domain.model.Client
+import io.vonley.mi.ui.compose.screens.consoles.domain.model.Client
 import kotlinx.coroutines.CoroutineScope
 import okhttp3.OkHttpClient
 import java.net.Socket

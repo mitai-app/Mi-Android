@@ -9,7 +9,7 @@ import io.vonley.mi.di.network.protocols.common.cmds.LedColor
 import io.vonley.mi.di.network.protocols.common.cmds.LedStatus
 import io.vonley.mi.di.network.protocols.common.models.*
 import io.vonley.mi.models.enums.Feature
-import io.vonley.mi.ui.main.console.data.remote.get
+import io.vonley.mi.ui.compose.screens.consoles.data.remote.get
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader

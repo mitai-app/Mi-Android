@@ -1,7 +1,7 @@
-package io.vonley.mi.ui.main.console.domain.usecase
+package io.vonley.mi.ui.compose.screens.consoles.domain.usecase
 
-import io.vonley.mi.ui.main.console.domain.model.Console
-import io.vonley.mi.ui.main.console.domain.repository.ConsoleRepository
+import io.vonley.mi.ui.compose.screens.consoles.domain.model.Console
+import io.vonley.mi.ui.compose.screens.consoles.domain.repository.ConsoleRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject

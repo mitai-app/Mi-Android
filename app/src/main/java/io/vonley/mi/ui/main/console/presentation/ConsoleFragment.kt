@@ -16,10 +16,11 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import io.vonley.mi.databinding.FragmentConsoleBinding
 import io.vonley.mi.extensions.e
-import io.vonley.mi.ui.main.console.domain.model.Console
+import io.vonley.mi.ui.compose.screens.consoles.presentation.ConsoleViewModel
+import io.vonley.mi.ui.compose.screens.consoles.domain.model.Console
 import io.vonley.mi.ui.dialogs.MiInputDialog
 import io.vonley.mi.ui.main.MainContract
-import io.vonley.mi.ui.main.console.domain.model.Client
+import io.vonley.mi.ui.compose.screens.consoles.domain.model.Client
 import io.vonley.mi.ui.main.console.presentation.adapters.ConsoleRecyclerAdapter
 import javax.inject.Inject
 
@@ -83,8 +84,6 @@ class ConsoleFragment : Fragment(), ConsoleContract.View, Observer<List<Console>
         binding.consoleRecycler.adapter = adapter
         swipeTouchHelper.attachToRecyclerView(binding.consoleRecycler)
         mainView?.setSummary(presenter.getTargetSummary)
-        vm.consoles.observe(viewLifecycleOwner, this)
-        vm.getConsoles()
     }
 
     override fun onAttach(context: Context) {
@@ -108,7 +107,7 @@ class ConsoleFragment : Fragment(), ConsoleContract.View, Observer<List<Console>
 
     override fun onStop() {
         super.onStop()
-        vm.consoles.removeObservers(viewLifecycleOwner)
+        //vm.consoles.removeObservers(viewLifecycleOwner)
     }
 
     override fun onDestroyView() {

@@ -9,8 +9,8 @@ import android.text.style.StyleSpan
 import io.vonley.mi.di.network.PSXService
 import io.vonley.mi.extensions.d
 import io.vonley.mi.extensions.e
-import io.vonley.mi.ui.main.console.data.remote.get
-import io.vonley.mi.ui.main.console.data.remote.set
+import io.vonley.mi.ui.compose.screens.consoles.data.remote.get
+import io.vonley.mi.ui.compose.screens.consoles.data.remote.set
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch

@@ -9,8 +9,8 @@ import io.vonley.mi.di.network.protocols.common.models.Temperature
 import io.vonley.mi.di.network.protocols.ps3mapi.models.PS3MAPIResponse
 import io.vonley.mi.extensions.e
 import io.vonley.mi.extensions.toJson
-import io.vonley.mi.ui.main.console.data.remote.get
-import io.vonley.mi.ui.main.console.data.remote.set
+import io.vonley.mi.ui.compose.screens.consoles.data.remote.get
+import io.vonley.mi.ui.compose.screens.consoles.data.remote.set
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import java.io.BufferedReader

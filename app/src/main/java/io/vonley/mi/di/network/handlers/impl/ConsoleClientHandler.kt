@@ -6,9 +6,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import io.vonley.mi.di.network.handlers.base.BaseClientHandler
 import io.vonley.mi.di.network.listeners.OnConsoleListener
-import io.vonley.mi.ui.main.console.domain.model.Console
-import io.vonley.mi.ui.main.console.data.local.ConsoleDao
-import io.vonley.mi.ui.main.console.domain.model.Client
+import io.vonley.mi.ui.compose.screens.consoles.domain.model.Console
+import io.vonley.mi.ui.compose.screens.consoles.data.local.ConsoleDao
+import io.vonley.mi.ui.compose.screens.consoles.domain.model.Client
 
 /**
  * If you made it here congratulations. What is this ConsoleClientHandler?

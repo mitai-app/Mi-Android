@@ -2,12 +2,12 @@ package io.vonley.mi.ui.main.console.presentation
 
 import io.vonley.mi.base.BasePresenter
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
-import io.vonley.mi.ui.main.console.data.remote.SyncService
-import io.vonley.mi.ui.main.console.domain.model.Console
+import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
+import io.vonley.mi.ui.compose.screens.consoles.domain.model.Console
 import io.vonley.mi.models.enums.Feature
 import io.vonley.mi.models.enums.PlatformType
-import io.vonley.mi.ui.main.console.data.local.ConsoleDao
-import io.vonley.mi.ui.main.console.domain.model.Client
+import io.vonley.mi.ui.compose.screens.consoles.data.local.ConsoleDao
+import io.vonley.mi.ui.compose.screens.consoles.domain.model.Client
 import io.vonley.mi.utils.SharedPreferenceManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

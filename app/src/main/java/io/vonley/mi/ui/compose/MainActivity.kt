@@ -18,7 +18,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.vonley.mi.ui.compose.nav.BottomNavigationBar
 import io.vonley.mi.ui.compose.nav.TopBar
 import io.vonley.mi.ui.compose.screens.*
-import io.vonley.mi.ui.compose.screens.consoles.ConsolesView
+import io.vonley.mi.ui.compose.screens.consoles.presentation.ConsolesView
 import io.vonley.mi.ui.compose.screens.ftp.FtpView
 import io.vonley.mi.ui.compose.screens.packages.presentation.RepositoryView
 import io.vonley.mi.ui.compose.screens.settings.SettingsView

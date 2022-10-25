@@ -15,10 +15,10 @@ import io.vonley.mi.helpers.Voice
 import io.vonley.mi.helpers.impl.VoiceImpl
 import io.vonley.mi.persistence.AppDatabase
 import io.vonley.mi.ui.compose.screens.packages.data.local.PackageRepositoryDao
-import io.vonley.mi.ui.main.console.data.local.ConsoleDao
-import io.vonley.mi.ui.main.console.data.remote.SyncService
-import io.vonley.mi.ui.main.console.data.repository.ConsoleRepositoryImpl
-import io.vonley.mi.ui.main.console.domain.repository.ConsoleRepository
+import io.vonley.mi.ui.compose.screens.consoles.data.local.ConsoleDao
+import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
+import io.vonley.mi.ui.compose.screens.consoles.data.repository.ConsoleRepositoryImpl
+import io.vonley.mi.ui.compose.screens.consoles.domain.repository.ConsoleRepository
 import io.vonley.mi.utils.SharedPreferenceManager
 import io.vonley.mi.utils.SharedPreferenceManagerImpl
 import javax.inject.Singleton

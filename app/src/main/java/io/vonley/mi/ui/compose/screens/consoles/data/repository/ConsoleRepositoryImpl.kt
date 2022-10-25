@@ -1,14 +1,14 @@
-package io.vonley.mi.ui.main.console.data.repository
+package io.vonley.mi.ui.compose.screens.consoles.data.repository
 
 import androidx.lifecycle.LiveData
 import io.vonley.mi.di.network.listeners.OnConsoleListener
-import io.vonley.mi.ui.main.console.data.remote.SyncService
+import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
 import io.vonley.mi.di.repository.base.BaseRepository
 import io.vonley.mi.models.enums.Feature
 import io.vonley.mi.models.enums.PlatformType
-import io.vonley.mi.ui.main.console.domain.model.Console
-import io.vonley.mi.ui.main.console.data.local.ConsoleDao
-import io.vonley.mi.ui.main.console.domain.repository.ConsoleRepository
+import io.vonley.mi.ui.compose.screens.consoles.domain.model.Console
+import io.vonley.mi.ui.compose.screens.consoles.data.local.ConsoleDao
+import io.vonley.mi.ui.compose.screens.consoles.domain.repository.ConsoleRepository
 import javax.inject.Inject
 
 
@@ -38,7 +38,8 @@ class ConsoleRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateNickName(ip: String, nickname: String) {
-        dao.insert(Console(
+        dao.insert(
+            Console(
             ip,
             "Playstation 4",
             PlatformType.UNKNOWN,
@@ -46,18 +47,21 @@ class ConsoleRepositoryImpl @Inject constructor(
             false,
             sync.wifiInfo.ssid,
             true
-        ))
+        )
+        )
     }
 
     override suspend fun insert(console: String) {
-        dao.insert(Console(
+        dao.insert(
+            Console(
             console,
             "Playstation 4",
             PlatformType.PS4,
             listOf(Feature.FTP),
             false,
             sync.wifiInfo.ssid
-        ))
+        )
+        )
     }
 
     override suspend fun getConsole(ip: String): Console {
@@ -66,6 +70,10 @@ class ConsoleRepositoryImpl @Inject constructor(
 
     override suspend fun setPin(ip: String, b: Boolean) {
         dao.setPin(ip, b)
+    }
+
+    override fun selectConsole(console: Console) {
+        sync.setTarget(console)
     }
 
     override fun onEmptyDataReceived() {

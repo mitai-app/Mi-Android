@@ -1,9 +1,9 @@
-package io.vonley.mi.ui.main.console.domain.model
+package io.vonley.mi.ui.compose.screens.consoles.domain.model
 
 import io.vonley.mi.Constants
-import io.vonley.mi.ui.main.console.data.remote.SyncService
-import io.vonley.mi.ui.main.console.data.remote.get
-import io.vonley.mi.ui.main.console.data.remote.set
+import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
+import io.vonley.mi.ui.compose.screens.consoles.data.remote.get
+import io.vonley.mi.ui.compose.screens.consoles.data.remote.set
 import io.vonley.mi.extensions.i
 import io.vonley.mi.models.enums.Feature
 import io.vonley.mi.models.enums.PlatformType

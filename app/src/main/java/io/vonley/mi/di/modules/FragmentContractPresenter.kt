@@ -8,7 +8,7 @@ import dagger.hilt.android.components.FragmentComponent
 import dagger.hilt.android.scopes.FragmentScoped
 import io.vonley.mi.di.network.protocols.klog.KLog
 import io.vonley.mi.ui.main.MainContract
-import io.vonley.mi.ui.main.console.data.remote.SyncService
+import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
 import io.vonley.mi.ui.main.console.presentation.ConsoleFragment
 import io.vonley.mi.ui.main.console.presentation.adapters.ConsoleRecyclerAdapter
 import io.vonley.mi.ui.main.console.presentation.sheets.ProtocolSheetFragment

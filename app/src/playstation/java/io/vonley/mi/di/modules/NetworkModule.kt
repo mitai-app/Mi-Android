@@ -21,8 +21,8 @@ import io.vonley.mi.di.network.protocols.ps3mapi.PS3MAPIImpl
 import io.vonley.mi.di.network.protocols.webman.WebManImpl
 import io.vonley.mi.persistence.AppDatabase
 import io.vonley.mi.ui.compose.screens.packages.data.remote.RepoService
-import io.vonley.mi.ui.main.console.data.remote.SyncService
-import io.vonley.mi.ui.main.console.data.remote.SyncServiceImpl
+import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
+import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncServiceImpl
 import io.vonley.mi.utils.SharedPreferenceManager
 import okhttp3.Cache
 import okhttp3.OkHttpClient

@@ -7,15 +7,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.vonley.mi.common.Resource
+import io.vonley.mi.ui.compose.screens.packages.domain.usecase.AddRepositoryUseCase
 import io.vonley.mi.ui.compose.screens.packages.domain.usecase.GetRepositoryUseCase
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.single
 import javax.inject.Inject
 
 @HiltViewModel
 class RepoViewModel @Inject constructor(
     private val repoUseCase: GetRepositoryUseCase,
+    private val addRepoUseCase: AddRepositoryUseCase
 ) : ViewModel() {
 
     private val _repoState: MutableState<RepoState> = mutableStateOf(RepoState.Loading)
@@ -41,7 +42,7 @@ class RepoViewModel @Inject constructor(
         }.launchIn(viewModelScope)
     }
 
-    fun searchComics(search: String) {
+    fun searchRelevance(search: String) {
         repoUseCase(search).onEach { result ->
             when (result) {
                 is Resource.Success -> {
@@ -55,6 +56,26 @@ class RepoViewModel @Inject constructor(
                 }
             }
         }.launchIn(viewModelScope)
+    }
+
+    fun addRepo(link: String) {
+        addRepoUseCase(link).onEach { result ->
+            var value = repoState.value
+            when(result) {
+                is Resource.Error -> {
+                    _repoState.value = RepoState.Error("Unable to add repo...")
+                }
+                is Resource.Loading -> {
+                    // Dont do anything
+                }
+                is Resource.Success -> {
+                    if(value is RepoState.Success) {
+                        value = RepoState.Success(value.repos + result.data!!)
+                    }
+                    _repoState.value = value
+                }
+            }
+        }
     }
 
     class Factory(

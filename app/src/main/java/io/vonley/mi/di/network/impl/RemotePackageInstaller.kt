@@ -2,7 +2,7 @@ package io.vonley.mi.di.network.impl
 
 import io.vonley.mi.extensions.e
 import io.vonley.mi.models.Payload
-import io.vonley.mi.ui.main.console.data.remote.SyncService
+import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

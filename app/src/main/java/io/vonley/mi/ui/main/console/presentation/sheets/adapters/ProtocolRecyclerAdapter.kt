@@ -16,7 +16,7 @@ import io.vonley.mi.di.network.protocols.ps3mapi.PS3MAPI
 import io.vonley.mi.di.network.protocols.webman.Webman
 import io.vonley.mi.models.enums.Feature
 import io.vonley.mi.ui.main.MainContract
-import io.vonley.mi.ui.main.console.domain.model.Client
+import io.vonley.mi.ui.compose.screens.consoles.domain.model.Client
 import io.vonley.mi.ui.main.console.presentation.sheets.views.*
 import javax.inject.Inject
 

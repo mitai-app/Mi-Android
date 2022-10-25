@@ -2,11 +2,11 @@ package io.vonley.mi.ui.compose.screens.packages.presentation
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.TextField
-import androidx.compose.material.TextFieldColors
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -33,19 +33,31 @@ import io.vonley.mi.ui.compose.screens.packages.data.remote.dto.Repo
 fun RepositoryView() {
     val vm = hiltViewModel<RepoViewModel>()
     val repoState by remember { vm.repoState }
-    RepoViewState(state = repoState)
+    RepoViewState(
+        state = repoState,
+        onAddRepoClick = { link ->
+            vm.addRepo(link)
+        },
+        onSearchChange = { search ->
+            if (search.isNotEmpty() && !search.isLink()) {
+                vm.searchRelevance(search)
+            } else if (search.isEmpty()){
+                vm.getRepos()
+            }
+        }
+    )
 }
 
 @Composable
-fun RepoViewState(state: RepoState) {
+fun RepoViewState(state: RepoState, onSearchChange: (String) -> Unit,  onAddRepoClick: (String) -> Unit) {
     val search = remember {
-        mutableStateOf("Example")
+        mutableStateOf("")
     }
     Column {
         Row() {
             TextField(
                 value = search.value,
-                modifier= Modifier
+                modifier = Modifier
                     .padding(16.dp, 16.dp, 16.dp, 8.dp)
                     .fillMaxWidth(),
                 colors = TextFieldDefaults
@@ -55,6 +67,7 @@ fun RepoViewState(state: RepoState) {
                     ),
                 onValueChange = {
                     search.value = it
+                    onSearchChange(it)
                 },
                 placeholder = {
                     Text("Enter repo url or search by packages...", color = Color.Gray)
@@ -63,23 +76,24 @@ fun RepoViewState(state: RepoState) {
                 shape = RoundedCornerShape(12.dp)
             )
         }
-        if (!search.value.isLink()) {
-            AddRepo(link = search.value)
-        }
-        Column(modifier = Modifier.verticalScroll(ScrollState(0))) {
-            when (state) {
-                is RepoState.Loading -> {
-                    LoadingRepo()
-                }
-                is RepoState.Success -> {
-                    if (state.repos.isNotEmpty()) {
-                        RepoListView(state.repos)
-                    } else {
-                        EmptyRepo()
+        if (search.value.isLink()) {
+            AddRepo(link = search.value, onClick = onAddRepoClick)
+        } else {
+            Column(modifier = Modifier.verticalScroll(ScrollState(0))) {
+                when (state) {
+                    is RepoState.Loading -> {
+                        LoadingRepo()
                     }
-                }
-                is RepoState.Error -> {
-                    ErrorRepo(state.error)
+                    is RepoState.Success -> {
+                        if (state.repos.isNotEmpty()) {
+                            RepoListView(state.repos)
+                        } else {
+                            EmptyRepo()
+                        }
+                    }
+                    is RepoState.Error -> {
+                        ErrorRepo(state.error)
+                    }
                 }
             }
         }
@@ -87,11 +101,12 @@ fun RepoViewState(state: RepoState) {
 }
 
 @Composable
-fun AddRepo(link: String) {
+fun AddRepo(link: String, onClick: (String) -> Unit) {
     Card(
         shape = RoundedCornerShape(20.dp),
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = { onClick(link) })
             .height(100.dp)
             .padding(16.dp, 8.dp),
         colors = CardDefaults.cardColors(
@@ -110,7 +125,22 @@ fun AddRepo(link: String) {
 
 @Composable
 fun ErrorRepo(error: String) {
-
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
+            .padding(16.dp, 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.Red
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(text = error)
+        }
+    }
 }
 
 @Composable
@@ -201,13 +231,13 @@ fun RepoCard(repo: Repo) {
 @Preview
 @Composable
 fun PreviewLoadingState() {
-    RepoViewState(RepoState.Loading)
+    RepoViewState(RepoState.Loading , {}, {})
 }
 
 @Preview
 @Composable
 fun PreviewEmpty() {
-    RepoViewState(RepoState.Success())
+    RepoViewState(RepoState.Success(), {}, {})
 }
 
 @Preview
@@ -257,5 +287,5 @@ fun PreviewRepoView() {
             elements, elements
         )
     )
-    RepoViewState(state)
+    RepoViewState(state, {}, {})
 }

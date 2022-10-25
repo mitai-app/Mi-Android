@@ -1,9 +1,9 @@
-package io.vonley.mi.ui.main.console.data.local
+package io.vonley.mi.ui.compose.screens.consoles.data.local
 
 import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Query
-import io.vonley.mi.ui.main.console.domain.model.Console
+import io.vonley.mi.ui.compose.screens.consoles.domain.model.Console
 import io.vonley.mi.models.enums.Feature
 import io.vonley.mi.models.enums.PlatformType
 import io.vonley.mi.persistence.IDao

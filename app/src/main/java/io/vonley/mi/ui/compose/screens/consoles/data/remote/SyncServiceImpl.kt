@@ -1,4 +1,4 @@
-package io.vonley.mi.ui.main.console.data.remote
+package io.vonley.mi.ui.compose.screens.consoles.data.remote
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -23,9 +23,9 @@ import io.vonley.mi.di.network.listeners.OnConsoleListener
 import io.vonley.mi.extensions.*
 import io.vonley.mi.models.enums.Feature
 import io.vonley.mi.persistence.AppDatabase
-import io.vonley.mi.ui.main.console.data.local.ConsoleDao
-import io.vonley.mi.ui.main.console.domain.model.Client
-import io.vonley.mi.ui.main.console.domain.model.Console
+import io.vonley.mi.ui.compose.screens.consoles.data.local.ConsoleDao
+import io.vonley.mi.ui.compose.screens.consoles.domain.model.Client
+import io.vonley.mi.ui.compose.screens.consoles.domain.model.Console
 import io.vonley.mi.utils.SharedPreferenceManager
 import kotlinx.coroutines.*
 import okhttp3.OkHttpClient
