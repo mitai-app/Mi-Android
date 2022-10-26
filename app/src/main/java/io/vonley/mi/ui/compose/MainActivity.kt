@@ -19,7 +19,7 @@ import io.vonley.mi.ui.compose.nav.BottomNavigationBar
 import io.vonley.mi.ui.compose.nav.TopBar
 import io.vonley.mi.ui.compose.screens.*
 import io.vonley.mi.ui.compose.screens.consoles.presentation.ConsolesView
-import io.vonley.mi.ui.compose.screens.ftp.presentation.FtpView
+import io.vonley.mi.ui.compose.screens.ftp.presentation.FTPView
 import io.vonley.mi.ui.compose.screens.packages.presentation.RepositoryView
 import io.vonley.mi.ui.compose.screens.settings.SettingsView
 
@@ -62,7 +62,7 @@ fun Navigation(navController: NavHostController) {
             RepositoryView()
         }
         composable(TabItem.Ftp.route) {
-            FtpView()
+            FTPView()
         }
         composable(TabItem.Settings.route) {
             SettingsView()
