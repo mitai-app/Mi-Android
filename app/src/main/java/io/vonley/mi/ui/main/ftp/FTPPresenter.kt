@@ -6,6 +6,7 @@ import kotlinx.coroutines.withContext
 import io.vonley.mi.base.BasePresenter
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
 import io.vonley.mi.di.network.MiFTPClient
+import io.vonley.mi.models.enums.Event
 import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
 import io.vonley.mi.utils.SharedPreferenceManager
 import org.apache.commons.net.ftp.FTPFile
@@ -22,13 +23,17 @@ class FTPPresenter @Inject constructor(
         get() = manager.ftpPath ?:"/"
 
     override fun navigateTo(ftpFile: FTPFile) {
-        if (ftpFile.isDirectory) {
-            ftp.setWorkingDir(ftpFile)
+        launch {
+            if (ftpFile.isDirectory) {
+                ftp.setWorkingDir(ftpFile)
+            }
         }
     }
 
     override fun navigateTo(path: String) {
-        ftp.setWorkingDir(path)
+        launch {
+            ftp.setWorkingDir(path)
+        }
     }
 
     override fun delete(ftpFile: FTPFile) {
@@ -62,14 +67,6 @@ class FTPPresenter @Inject constructor(
                 }
             }
         }
-    }
-
-    enum class Event(var filename: String, var data: Any? = null) {
-        DELETE(""),
-        DOWNLOAD(""),
-        RENAME(""),
-        REPLACE(""),
-        UPLOAD("")
     }
 
     override fun replace(ftpFile: FTPFile, stream: InputStream) {

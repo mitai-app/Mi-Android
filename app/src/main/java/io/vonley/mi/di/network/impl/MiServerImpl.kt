@@ -248,10 +248,6 @@ class MiServerImpl constructor(
             PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val texts = "Visit http://${service.localDeviceIp}:${activePort} on your ps4!"
-        val titles = "ミ (Mi)"
-        val summaries = "Jailbreak server is running in the background"
-
         val style = NotificationCompat.BigTextStyle()
             .bigText(content)
             .setBigContentTitle(title)

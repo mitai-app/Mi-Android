@@ -1,24 +1,25 @@
 package io.vonley.mi.di.modules
 
 import android.app.Application
-
 import android.content.Context
 import androidx.room.Room
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.android.scopes.ActivityRetainedScoped
 import dagger.hilt.components.SingletonComponent
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
+import io.vonley.mi.di.network.MiFTPClient
 import io.vonley.mi.helpers.Voice
 import io.vonley.mi.helpers.impl.VoiceImpl
 import io.vonley.mi.persistence.AppDatabase
-import io.vonley.mi.ui.compose.screens.packages.data.local.PackageRepositoryDao
 import io.vonley.mi.ui.compose.screens.consoles.data.local.ConsoleDao
 import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
 import io.vonley.mi.ui.compose.screens.consoles.data.repository.ConsoleRepositoryImpl
 import io.vonley.mi.ui.compose.screens.consoles.domain.repository.ConsoleRepository
+import io.vonley.mi.ui.compose.screens.ftp.data.repository.FTPRepositoryImpl
+import io.vonley.mi.ui.compose.screens.ftp.domain.repository.FTPRepository
+import io.vonley.mi.ui.compose.screens.packages.data.local.PackageRepositoryDao
 import io.vonley.mi.utils.SharedPreferenceManager
 import io.vonley.mi.utils.SharedPreferenceManagerImpl
 import javax.inject.Singleton
@@ -80,6 +81,17 @@ object LocalStorageModule {
         consoleDao: ConsoleDao
     ): ConsoleRepository {
         return ConsoleRepositoryImpl(service, consoleDao)
+    }
+
+
+
+    @Provides
+    @Singleton
+    fun provideFTPRepository(
+        client: MiFTPClient,
+        @SharedPreferenceStorage manager: SharedPreferenceManager
+    ): FTPRepository {
+        return FTPRepositoryImpl(client, manager)
     }
 
 

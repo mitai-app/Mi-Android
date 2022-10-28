@@ -134,10 +134,10 @@ class FTPFragment : Fragment(), FTPContract.View, ActivityResultCallback<Activit
                         .show(childFragmentManager, TAG)
                 }
                 R.id.ftp_delete -> {
-                    dialog("Are you sure you want to delete ${ftpFile.name}", "OK") { d, i ->
+                    dialog("Are you sure you want to delete ${ftpFile.name}", "OK") { d, _ ->
                         presenter.delete(ftpFile)
                         d.dismiss()
-                    }.setNegativeButton("Cancel") { d, i ->
+                    }.setNegativeButton("Cancel") { d, _ ->
                         d.dismiss()
                     }.create().show()
                     true

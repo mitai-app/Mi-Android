@@ -2,14 +2,6 @@ package io.vonley.mi.ui.compose.screens.ftp.domain.repository
 
 import org.apache.commons.net.ftp.FTPFile
 
-enum class Event(var filename: String, var data: Any? = null) {
-    DELETE(""),
-    DOWNLOAD(""),
-    RENAME(""),
-    REPLACE(""),
-    UPLOAD("")
-}
-
 sealed class FTPEvent {
 
     data class Delete(val filename: String): FTPEvent()

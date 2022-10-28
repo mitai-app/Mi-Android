@@ -32,12 +32,31 @@ class FTPViewModel @Inject constructor(
     val navigateUseCase: NavigateUseCase,
     val renameUseCase: RenameUseCase,
     val replaceUseCase: ReplaceUseCase,
-    val uploadUseCase: UploadUseCase
-) : ViewModel(), Observer<Array<out FTPFile>> {
+    val uploadUseCase: UploadUseCase,
+) : ViewModel() {
 
+    private val connectedObserver: Observer<in Boolean> = Observer<Boolean> { connected ->
+        if (connected) {
+
+        } else {
+
+        }
+    }
+
+    private val dirObserver: Observer<Array<out FTPFile>> =  Observer<Array<out FTPFile>> { files ->
+        val state = ftpState.value
+        if(state is FTPState.Success) {
+            _ftpDirs.value = FTPState.Success(files.toList(), state.event)
+        } else if (state is FTPState.Error){
+            _ftpDirs.value = FTPState.Success(files.toList())
+        }
+    }
     private var _ftpDirs: MutableState<FTPState> = mutableStateOf(FTPState.Loading(emptyList(), FTPEvent.None))
+    private var _connected: MutableState<Boolean> = mutableStateOf(false)
 
     val ftpState: State<FTPState> get() = _ftpDirs
+
+    val connected: State<Boolean> get() = _connected
 
     init {
         initialize()
@@ -45,23 +64,20 @@ class FTPViewModel @Inject constructor(
 
     fun navigateTo(ftpFile: FTPFile) {
         navigateUseCase(ftpFile).onEach {
-
+            when(it) {
+                is Resource.Error -> handleError(it.status, it.data)
+                is Resource.Loading -> handleLoading(it.status, it.data)
+                is Resource.Success -> handleSuccess(it.status, it.data)
+            }
         }.launchIn(viewModelScope)
     }
 
     fun navigateTo(path: String) {
         navigateUseCase(path).onEach {
             when(it) {
-                is Resource.Error -> TODO()
-                is Resource.Loading -> TODO()
-                is Resource.Success -> when(it.data) {
-                    is FTPEvent.WorkingDir -> {
-
-                    }
-                    else -> {
-
-                    }
-                }
+                is Resource.Error -> handleError(it.status, it.data)
+                is Resource.Loading -> handleLoading(it.status, it.data)
+                is Resource.Success -> handleSuccess(it.status, it.data)
             }
         }.launchIn(viewModelScope)
     }
@@ -173,33 +189,29 @@ class FTPViewModel @Inject constructor(
         }.launchIn(viewModelScope)
     }
 
-
     private fun initialize() {
-        ftp.cwd.removeObserver(this)
-        ftp.cwd.observeForever(this)
+        ftp.cwd.removeObserver(dirObserver)
+        ftp.cwd.observeForever(dirObserver)
+        ftp.connected.removeObserver(connectedObserver)
+        ftp.connected.observeForever(connectedObserver)
+    }
+
+    fun connect() {
         sync.target?.run {
             ftp.connect()
         } ?: run {
-            //view.noTarget()
+            _ftpDirs.value = FTPState.Error(emptyList(), FTPEvent.None, message = "Please connect to a target.")
         }
     }
 
     fun cleanup() {
         if (ftp.cwd.hasObservers()) {
-            ftp.cwd.removeObserver(this)
+            ftp.cwd.removeObserver(dirObserver)
+        }
+        if(ftp.connected.hasObservers()) {
+            ftp.connected.removeObserver(connectedObserver)
         }
         ftp.disconnect()
-    }
-
-    override fun onChanged(t: Array<out FTPFile>?) {
-        t?.let {
-            val state = ftpState.value
-            if(state is FTPState.Success) {
-                _ftpDirs.value = FTPState.Success(it.toList(), state.event)
-            } else if (state is FTPState.Error){
-                _ftpDirs.value = FTPState.Success(it.toList())
-            }
-        }
     }
 
     companion object {

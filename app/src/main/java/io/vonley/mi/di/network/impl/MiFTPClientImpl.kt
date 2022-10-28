@@ -6,8 +6,8 @@ import androidx.lifecycle.MutableLiveData
 import io.vonley.mi.BuildConfig
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
 import io.vonley.mi.di.network.MiFTPClient
-import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
 import io.vonley.mi.models.enums.Feature
+import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
 import io.vonley.mi.utils.SharedPreferenceManager
 import io.vonley.mi.utils.set
 import kotlinx.coroutines.*
@@ -26,6 +26,9 @@ class MiFTPClientImpl constructor(
     override val sync: SyncService
 ) : MiFTPClient {
 
+    override val connected: LiveData<Boolean>
+        get() = _connected
+
     override val job: Job = Job()
 
     private var client: FTPClient = FTPClient()
@@ -36,6 +39,7 @@ class MiFTPClientImpl constructor(
     private var _port: Int? = null
 
     private val _cwd: MutableLiveData<Array<out FTPFile>> = MutableLiveData<Array<out FTPFile>>()
+    private val _connected: MutableLiveData<Boolean> = MutableLiveData<Boolean>(false)
 
     companion object {
         const val TAG = ".MiFTPClientImpl"
@@ -106,6 +110,11 @@ class MiFTPClientImpl constructor(
                 setWorkingDir(ftpPath)
                 client.setFileType(FTP.BINARY_FILE_TYPE)
                 callback.onLoggedIn()
+                withContext(Dispatchers.Main) {
+                    synchronized(this) {
+                        _connected.postValue(client.isConnected)
+                    }
+                }
             } else {
                 callback.onInvalidCredentials()
             }
@@ -171,36 +180,41 @@ class MiFTPClientImpl constructor(
 
     override val cwd: LiveData<Array<out FTPFile>> get() = _cwd
 
-    override fun setWorkingDir(ftpFile: FTPFile) {
+    override suspend fun setWorkingDir(ftpFile: FTPFile): Boolean {
         if (ftpFile.isDirectory) {
-            setWorkingDir(ftpFile.name)
+            return setWorkingDir(ftpFile.name)
         }
+        return false
     }
 
-    override fun setWorkingDir(dir: String?) {
+    override suspend fun setWorkingDir(dir: String?): Boolean {
         if (BuildConfig.DEBUG) {
             Log.e(TAG, "dir: $dir")
         }
-        launch {
-            try {
-                val changed = client.changeWorkingDirectory(dir)
-                client.printWorkingDirectory()?.let {
-                    manager[SharedPreferenceManager.FTPPATH] = it
-                }
-                if (changed) {
-                    getGWD()
-                    callback.onDirChanged()
-                }
-            } catch (e: FTPConnectionClosedException) {
-                if (BuildConfig.DEBUG) {
-                    callback.onClosed()
-                }
-            } catch (e: Throwable) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, e.message ?: "Something went wrong")
+        try {
+            val changed = client.changeWorkingDirectory(dir)
+            client.printWorkingDirectory()?.let {
+                withContext(Dispatchers.Main) {
+                    synchronized(this) {
+                        manager[SharedPreferenceManager.FTPPATH] = it
+                    }
                 }
             }
+            if (changed) {
+                getGWD()
+                callback.onDirChanged()
+            }
+            return changed
+        } catch (e: FTPConnectionClosedException) {
+            if (BuildConfig.DEBUG) {
+                callback.onClosed()
+            }
+        } catch (e: Throwable) {
+            if (BuildConfig.DEBUG) {
+                Log.e(TAG, e.message ?: "Something went wrong")
+            }
         }
+        return false
     }
 
     private suspend fun getGWD() {
@@ -230,12 +244,14 @@ class MiFTPClientImpl constructor(
         try {
             if (client.isConnected) {
                 client.enterLocalPassiveMode()
-                val file = client.storeFile(file, stream)
-                stream.close()
-                if (file) {
+                val uploaded = client.storeFile(file, stream)
+                withContext(Dispatchers.IO) {
+                    stream.close()
+                }
+                if (uploaded) {
                     getGWD()
                 }
-                return file
+                return uploaded
             }
             return false
         } catch (e: Throwable) {
@@ -252,6 +268,11 @@ class MiFTPClientImpl constructor(
                 client.removeProtocolCommandListener(this@MiFTPClientImpl)
                 client.logout()
                 client.disconnect()
+                withContext(Dispatchers.Main) {
+                    synchronized(this) {
+                        _connected.postValue(client.isConnected)
+                    }
+                }
             } catch (e: Throwable) {
                 if (BuildConfig.DEBUG) {
                     Log.e(TAG, e.message ?: "Something went wrong")
@@ -311,15 +332,22 @@ class MiFTPClientImpl constructor(
         return false
     }
 
+    override suspend fun getDir(): String? {
+        if (client.isConnected) {
+            return client.printWorkingDirectory()
+        }
+        return null
+    }
+
     override fun protocolCommandSent(event: ProtocolCommandEvent?) {
         if (BuildConfig.DEBUG) {
-            Log.e(TAG, "SENT: ${event?.message}" ?: "SENT")
+            Log.e(TAG, "SENT: ${event?.message}")
         }
     }
 
     override fun protocolReplyReceived(event: ProtocolCommandEvent?) {
         if (BuildConfig.DEBUG) {
-            Log.e(TAG, "RCV: ${event?.message}" ?: "RCV")
+            Log.e(TAG, "RCV: ${event?.message}")
         }
     }
 
