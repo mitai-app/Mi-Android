@@ -1,4 +1,4 @@
-package io.vonley.mi.ui.compose.screens.packages.data.remote.dto
+package io.vonley.mi.ui.compose.screens.packages.data.local.entity
 
 import android.os.Parcelable
 import androidx.room.Entity

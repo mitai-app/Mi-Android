@@ -2,7 +2,7 @@ package io.vonley.mi.ui.compose.screens.ftp.data.repository
 
 import io.vonley.mi.common.Resource
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
-import io.vonley.mi.di.network.MiFTPClient
+import io.vonley.mi.ui.compose.screens.ftp.domain.remote.MiFTPClient
 import io.vonley.mi.ui.compose.screens.ftp.domain.repository.FTPEvent
 import io.vonley.mi.ui.compose.screens.ftp.domain.repository.FTPRepository
 import io.vonley.mi.utils.SharedPreferenceManager

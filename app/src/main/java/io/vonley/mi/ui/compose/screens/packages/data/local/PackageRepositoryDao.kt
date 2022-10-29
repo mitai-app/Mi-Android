@@ -1,10 +1,9 @@
 package io.vonley.mi.ui.compose.screens.packages.data.local
 
-import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Query
 import io.vonley.mi.persistence.IDao
-import io.vonley.mi.ui.compose.screens.packages.data.remote.dto.Repo
+import io.vonley.mi.ui.compose.screens.packages.data.local.entity.Repo
 import kotlinx.coroutines.flow.Flow
 
 @Dao

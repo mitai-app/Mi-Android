@@ -14,15 +14,17 @@ import io.vonley.mi.di.network.PSXService
 import io.vonley.mi.di.network.auth.OAuth2Authenticator
 import io.vonley.mi.di.network.impl.*
 import io.vonley.mi.di.network.protocols.ccapi.CCAPIImpl
-import io.vonley.mi.di.network.protocols.goldenhen.Goldhen
 import io.vonley.mi.di.network.protocols.goldenhen.GoldhenImpl
 import io.vonley.mi.di.network.protocols.klog.KLogImpl
 import io.vonley.mi.di.network.protocols.ps3mapi.PS3MAPIImpl
 import io.vonley.mi.di.network.protocols.webman.WebManImpl
 import io.vonley.mi.persistence.AppDatabase
-import io.vonley.mi.ui.compose.screens.packages.data.remote.RepoService
-import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
+import io.vonley.mi.ui.compose.screens.packages.domain.remote.RepoService
+import io.vonley.mi.ui.compose.screens.consoles.domain.remote.SyncService
 import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncServiceImpl
+import io.vonley.mi.ui.compose.screens.ftp.data.remote.MiFTPClientImpl
+import io.vonley.mi.ui.compose.screens.packages.data.remote.RemotePackageInstallerImpl
+import io.vonley.mi.ui.compose.screens.packages.domain.remote.RemotePackageInstaller
 import io.vonley.mi.utils.SharedPreferenceManager
 import okhttp3.Cache
 import okhttp3.OkHttpClient
@@ -77,7 +79,7 @@ object NetworkModule {
     fun provideGoldhenService(
         service: PSXService,
         server: MiServer,
-        rpi: RPI
+        rpi: RemotePackageInstaller
     ): GoldhenImpl {
         return GoldhenImpl(service, rpi, server)
     }
@@ -87,8 +89,8 @@ object NetworkModule {
     @Singleton
     fun provideRPIServer(
         service: SyncService
-    ): RemotePackageInstaller {
-        return RemotePackageInstaller(service)
+    ): RemotePackageInstallerImpl {
+        return RemotePackageInstallerImpl(service)
     }
 
 

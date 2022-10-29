@@ -1,9 +1,7 @@
 package io.vonley.mi.ui.compose.screens.packages.domain.repository
 
-import androidx.lifecycle.LiveData
 import io.vonley.mi.common.Resource
-import io.vonley.mi.ui.compose.screens.packages.data.remote.dto.Repo
-import kotlinx.coroutines.flow.Flow
+import io.vonley.mi.ui.compose.screens.packages.data.local.entity.Repo
 
 interface PackageRepository {
     suspend fun getRepository(link: String): Resource<List<Repo>>

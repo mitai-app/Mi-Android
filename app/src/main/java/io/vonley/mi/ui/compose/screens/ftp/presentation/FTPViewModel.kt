@@ -9,9 +9,9 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.vonley.mi.common.Resource
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
-import io.vonley.mi.di.network.MiFTPClient
+import io.vonley.mi.ui.compose.screens.ftp.domain.remote.MiFTPClient
 import io.vonley.mi.extensions.e
-import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
+import io.vonley.mi.ui.compose.screens.consoles.domain.remote.SyncService
 import io.vonley.mi.ui.compose.screens.ftp.domain.repository.FTPEvent
 import io.vonley.mi.ui.compose.screens.ftp.domain.usecase.*
 import io.vonley.mi.utils.SharedPreferenceManager

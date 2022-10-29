@@ -1,7 +1,7 @@
 package io.vonley.mi.ui.compose.screens.packages.domain.usecase
 
 import io.vonley.mi.common.Resource
-import io.vonley.mi.ui.compose.screens.packages.data.remote.dto.Repo
+import io.vonley.mi.ui.compose.screens.packages.data.local.entity.Repo
 import io.vonley.mi.ui.compose.screens.packages.domain.repository.PackageRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch

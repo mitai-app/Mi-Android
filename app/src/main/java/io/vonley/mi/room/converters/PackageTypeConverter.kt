@@ -1,7 +1,7 @@
 package io.vonley.mi.room.converters
 
 import androidx.room.TypeConverter
-import io.vonley.mi.ui.compose.screens.packages.data.remote.dto.PackageType
+import io.vonley.mi.ui.compose.screens.packages.data.local.entity.PackageType
 
 class PackageTypeConverter {
 

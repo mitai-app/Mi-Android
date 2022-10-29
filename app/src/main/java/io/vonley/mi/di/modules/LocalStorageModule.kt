@@ -9,12 +9,12 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
-import io.vonley.mi.di.network.MiFTPClient
+import io.vonley.mi.ui.compose.screens.ftp.domain.remote.MiFTPClient
 import io.vonley.mi.helpers.Voice
 import io.vonley.mi.helpers.impl.VoiceImpl
 import io.vonley.mi.persistence.AppDatabase
 import io.vonley.mi.ui.compose.screens.consoles.data.local.ConsoleDao
-import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
+import io.vonley.mi.ui.compose.screens.consoles.domain.remote.SyncService
 import io.vonley.mi.ui.compose.screens.consoles.data.repository.ConsoleRepositoryImpl
 import io.vonley.mi.ui.compose.screens.consoles.domain.repository.ConsoleRepository
 import io.vonley.mi.ui.compose.screens.ftp.data.repository.FTPRepositoryImpl

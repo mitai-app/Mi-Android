@@ -1,24 +1,22 @@
-package io.vonley.mi.di.network.impl
+package io.vonley.mi.ui.compose.screens.packages.data.remote
 
+import io.vonley.mi.di.network.impl.Method
+import io.vonley.mi.ui.compose.screens.packages.data.remote.dto.RPIRequest
+import io.vonley.mi.ui.compose.screens.packages.data.remote.dto.RPIResponse
 import io.vonley.mi.extensions.e
 import io.vonley.mi.models.Payload
-import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
+import io.vonley.mi.ui.compose.screens.consoles.domain.remote.SyncService
+import io.vonley.mi.ui.compose.screens.packages.domain.remote.RemotePackageInstaller
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import java.io.ByteArrayInputStream
 import java.net.ServerSocket
 import java.net.Socket
 import javax.inject.Inject
 import kotlin.coroutines.CoroutineContext
 
-interface RPI {
-    fun hostPackage(vararg payload: Payload): Array<String>
-    fun start(port: Int = 12800): Job
-}
-
-class RemotePackageInstaller @Inject constructor(val service: SyncService) : RPI, CoroutineScope {
+class RemotePackageInstallerImpl @Inject constructor(val service: SyncService) : RemotePackageInstaller, CoroutineScope {
 
     val localDeviceIp get() = service.localDeviceIp
     private val payloads = hashMapOf<String, Payload>()
@@ -27,8 +25,8 @@ class RemotePackageInstaller @Inject constructor(val service: SyncService) : RPI
     private var port: Int = 0
 
     override fun start(port: Int) = launch {
-        this@RemotePackageInstaller.port = port
-        if (!this@RemotePackageInstaller::server.isInitialized) {
+        this@RemotePackageInstallerImpl.port = port
+        if (!this@RemotePackageInstallerImpl::server.isInitialized) {
             server = ServerSocket(port)
             "Initializing RPI server".e(TAG)
         } else {
@@ -130,6 +128,7 @@ class RemotePackageInstaller @Inject constructor(val service: SyncService) : RPI
             }
         }
     }
+
     private fun generate(client: Socket, request: RPIRequest, response: RPIResponse) {
         fun generateHeader(filename: String, start: Int, end: Int, totalBytes: Int): ByteArray {
             val headers = arrayOf(
@@ -203,6 +202,7 @@ class RemotePackageInstaller @Inject constructor(val service: SyncService) : RPI
             e.printStackTrace()
         }
     }
+
     private fun handleConnection(rpi: RPIRequest): RPIResponse {
         if (debug) {
             "PATH: ${rpi.path}?${rpi.param}".e(TAG)
@@ -215,6 +215,7 @@ class RemotePackageInstaller @Inject constructor(val service: SyncService) : RPI
             Method.DELETE -> handleDeleteRequest(rpi)
         }
     }
+
     private fun handleGetRequest(rpi: RPIRequest): RPIResponse {
         return when (rpi.path) {
             in payloads.keys -> {

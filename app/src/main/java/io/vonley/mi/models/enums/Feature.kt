@@ -5,7 +5,7 @@ import android.os.Parcelable
 import androidx.annotation.StringRes
 import androidx.room.Entity
 import io.vonley.mi.R
-import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
+import io.vonley.mi.ui.compose.screens.consoles.domain.remote.SyncService
 import io.vonley.mi.ui.compose.screens.consoles.domain.model.Client
 import kotlinx.parcelize.Parcelize
 import okhttp3.Request

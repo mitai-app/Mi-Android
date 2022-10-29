@@ -3,7 +3,7 @@ package io.vonley.mi.room.converters
 import androidx.room.TypeConverter
 import com.google.gson.GsonBuilder
 import io.vonley.mi.extensions.fromJson
-import io.vonley.mi.ui.compose.screens.packages.data.remote.dto.*
+import io.vonley.mi.ui.compose.screens.packages.data.local.entity.Package
 
 class PackageConverter {
 

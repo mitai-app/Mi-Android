@@ -1,12 +1,9 @@
-package io.vonley.mi.ui.compose.screens.packages.data.remote.dto
+package io.vonley.mi.ui.compose.screens.packages.data.local.entity
 
 import android.os.Parcelable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import androidx.room.Relation
 import androidx.room.TypeConverters
-import io.vonley.mi.room.converters.ConsoleTypeConverter
-import io.vonley.mi.room.converters.FeaturesConverter
 import io.vonley.mi.room.converters.PackageConverter
 import kotlinx.android.parcel.Parcelize
 

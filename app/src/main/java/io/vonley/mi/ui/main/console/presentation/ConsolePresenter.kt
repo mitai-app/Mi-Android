@@ -2,7 +2,7 @@ package io.vonley.mi.ui.main.console.presentation
 
 import io.vonley.mi.base.BasePresenter
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
-import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
+import io.vonley.mi.ui.compose.screens.consoles.domain.remote.SyncService
 import io.vonley.mi.ui.compose.screens.consoles.domain.model.Console
 import io.vonley.mi.models.enums.Feature
 import io.vonley.mi.models.enums.PlatformType

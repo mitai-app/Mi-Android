@@ -1,9 +1,8 @@
-package io.vonley.mi.ui.compose.screens.packages.data.remote
+package io.vonley.mi.ui.compose.screens.packages.domain.remote
 
-import io.vonley.mi.ui.compose.screens.packages.data.remote.dto.Repo
+import io.vonley.mi.ui.compose.screens.packages.data.local.entity.Repo
 import retrofit2.Response
 import retrofit2.http.GET
-import retrofit2.http.Path
 import retrofit2.http.Url
 
 interface RepoService {

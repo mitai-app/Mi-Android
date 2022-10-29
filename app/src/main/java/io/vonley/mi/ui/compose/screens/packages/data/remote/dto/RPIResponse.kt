@@ -1,4 +1,4 @@
-package io.vonley.mi.di.network.impl
+package io.vonley.mi.ui.compose.screens.packages.data.remote.dto
 
 import io.vonley.mi.models.Payload
 

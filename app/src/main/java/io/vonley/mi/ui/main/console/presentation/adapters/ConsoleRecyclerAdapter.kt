@@ -12,7 +12,7 @@ import io.vonley.mi.databinding.VhConsoleBinding
 import io.vonley.mi.di.network.protocols.klog.KLog
 import io.vonley.mi.models.enums.Feature
 import io.vonley.mi.ui.main.MainContract
-import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
+import io.vonley.mi.ui.compose.screens.consoles.domain.remote.SyncService
 import io.vonley.mi.ui.compose.screens.consoles.domain.model.*
 import io.vonley.mi.ui.main.console.presentation.sheets.ProtocolSheetFragment
 import javax.inject.Inject

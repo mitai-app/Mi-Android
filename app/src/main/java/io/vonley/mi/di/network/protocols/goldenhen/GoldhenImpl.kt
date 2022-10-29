@@ -4,9 +4,8 @@ import android.os.Environment
 import io.vonley.mi.di.modules.NetworkModule
 import io.vonley.mi.di.network.MiServer
 import io.vonley.mi.di.network.PSXService
-import io.vonley.mi.di.network.auth.OAuth2Authenticator
 import io.vonley.mi.di.network.impl.PSXServiceImpl
-import io.vonley.mi.di.network.impl.RPI
+import io.vonley.mi.ui.compose.screens.packages.domain.remote.RemotePackageInstaller
 import io.vonley.mi.extensions.*
 import io.vonley.mi.models.Payload
 import io.vonley.mi.models.enums.Feature
@@ -27,7 +26,7 @@ import kotlin.coroutines.CoroutineContext
 
 class GoldhenImpl @Inject constructor(
     override val service: PSXService,
-    override val rpi: RPI,
+    override val rpi: RemotePackageInstaller,
     val server: MiServer
 ) : Goldhen {
 

@@ -1,4 +1,4 @@
-package io.vonley.mi.ui.compose.screens.consoles.data.remote
+package io.vonley.mi.ui.compose.screens.consoles.domain.remote
 
 import android.net.Network
 import android.net.NetworkInfo

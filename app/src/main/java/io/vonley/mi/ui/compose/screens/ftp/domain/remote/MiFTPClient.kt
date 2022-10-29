@@ -1,7 +1,7 @@
-package io.vonley.mi.di.network
+package io.vonley.mi.ui.compose.screens.ftp.domain.remote
 
 import androidx.lifecycle.LiveData
-import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
+import io.vonley.mi.ui.compose.screens.consoles.domain.remote.SyncService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

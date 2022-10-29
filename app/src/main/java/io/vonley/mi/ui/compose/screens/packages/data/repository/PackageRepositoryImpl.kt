@@ -2,11 +2,10 @@ package io.vonley.mi.ui.compose.screens.packages.data.repository
 
 import io.vonley.mi.common.Resource
 import io.vonley.mi.ui.compose.screens.packages.data.local.PackageRepositoryDao
-import io.vonley.mi.ui.compose.screens.packages.data.remote.RepoService
-import io.vonley.mi.ui.compose.screens.packages.data.remote.dto.Repo
+import io.vonley.mi.ui.compose.screens.packages.domain.remote.RepoService
+import io.vonley.mi.ui.compose.screens.packages.data.local.entity.Repo
 import io.vonley.mi.ui.compose.screens.packages.domain.repository.PackageRepository
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.single
 import javax.inject.Inject
 
 class PackageRepositoryImpl @Inject constructor(

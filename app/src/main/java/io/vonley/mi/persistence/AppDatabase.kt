@@ -6,8 +6,8 @@ import androidx.room.TypeConverters
 import io.vonley.mi.room.converters.*
 import io.vonley.mi.ui.compose.screens.consoles.domain.model.Console
 import io.vonley.mi.ui.compose.screens.packages.data.local.PackageRepositoryDao
-import io.vonley.mi.ui.compose.screens.packages.data.remote.dto.Repo
-import io.vonley.mi.ui.compose.screens.packages.data.remote.dto.Package
+import io.vonley.mi.ui.compose.screens.packages.data.local.entity.Repo
+import io.vonley.mi.ui.compose.screens.packages.data.local.entity.Package
 import io.vonley.mi.ui.compose.screens.consoles.data.local.ConsoleDao
 
 @Database(

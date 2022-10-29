@@ -1,11 +1,9 @@
 package io.vonley.mi.ui.compose.screens.packages.presentation
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.MaterialTheme.typography
 import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material3.Card
@@ -15,18 +13,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.colorspace.ColorSpaces
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
 import io.vonley.mi.Constants
 import io.vonley.mi.extensions.isLink
-import io.vonley.mi.ui.compose.screens.packages.data.remote.dto.Package
-import io.vonley.mi.ui.compose.screens.packages.data.remote.dto.PackageType
-import io.vonley.mi.ui.compose.screens.packages.data.remote.dto.Repo
+import io.vonley.mi.ui.compose.screens.packages.data.local.entity.Package
+import io.vonley.mi.ui.compose.screens.packages.data.local.entity.PackageType
+import io.vonley.mi.ui.compose.screens.packages.data.local.entity.Repo
 
 
 @Composable
@@ -57,6 +59,7 @@ fun RepoViewState(state: RepoState, onSearchChange: (String) -> Unit,  onAddRepo
         Row() {
             TextField(
                 value = search.value,
+                visualTransformation=VisualTransformation.None,
                 modifier = Modifier
                     .padding(16.dp, 16.dp, 16.dp, 8.dp)
                     .fillMaxWidth(),
@@ -199,31 +202,48 @@ fun RepoCard(repo: Repo) {
             .wrapContentHeight()
             .padding(16.dp, 8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Constants.Color.TERTIARY
+            containerColor = Color(0,0,0, 0x50)
         )
     ) {
-        Column {
-            Spacer(modifier = Modifier.padding(8.dp))
-            Text(
-                text = repo.title,
-                modifier = Modifier.padding(16.dp, 0.dp)
-            )
-            Text(
-                text = repo.author,
-                modifier = Modifier.padding(16.dp, 0.dp)
-            )
-            Text(
-                text = repo.description,
-                modifier = Modifier.padding(16.dp, 0.dp)
-            )
+        val painter = rememberAsyncImagePainter(model = repo.banner)
+        Box(contentAlignment = Alignment.BottomStart) {
             Image(
-                painter = rememberAsyncImagePainter(model = repo.banner),
+                painter = painter,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(128.dp)
+                    .height(220.dp)
             )
+            Column(
+                modifier= Modifier
+                    .padding(0.dp)
+                    .fillMaxWidth()
+                    .background(Color.Black.copy(0.4F))
+            ) {
+                Column(
+                    modifier= Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                ) {
+                    Text(
+                        text = repo.title,
+                        modifier = Modifier.padding(0.dp, 0.dp),
+                        style = typography.h6.copy(color = Color.White)
+                    )
+                    Text(
+                        text = repo.author,
+                        modifier = Modifier.padding(0.dp, 0.dp),
+                        style = typography.body2.copy(color = Color.White)
+                    )
+                    Text(
+                        text = repo.description,
+                        modifier = Modifier.padding(0.dp, 0.dp),
+                        style = typography.caption.copy(color = Color.White)
+                    )
+                }
+
+            }
         }
     }
 }

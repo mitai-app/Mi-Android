@@ -2,7 +2,7 @@ package io.vonley.mi.ui.compose.screens.consoles.data.repository
 
 import androidx.lifecycle.LiveData
 import io.vonley.mi.di.network.listeners.OnConsoleListener
-import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
+import io.vonley.mi.ui.compose.screens.consoles.domain.remote.SyncService
 import io.vonley.mi.di.repository.base.BaseRepository
 import io.vonley.mi.models.enums.Feature
 import io.vonley.mi.models.enums.PlatformType

@@ -5,7 +5,7 @@ import io.vonley.mi.di.annotations.SharedPreferenceStorage
 import io.vonley.mi.di.annotations.GuestInterceptorOkHttpClient
 import io.vonley.mi.di.network.MiServer
 import io.vonley.mi.di.network.PSXService
-import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
+import io.vonley.mi.ui.compose.screens.consoles.domain.remote.SyncService
 import io.vonley.mi.di.network.callbacks.PayloadCallback
 import io.vonley.mi.extensions.*
 import io.vonley.mi.models.Payload

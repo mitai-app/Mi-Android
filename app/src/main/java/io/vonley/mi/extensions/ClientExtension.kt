@@ -4,7 +4,7 @@ import android.net.wifi.WifiInfo
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
-import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
+import io.vonley.mi.ui.compose.screens.consoles.domain.remote.SyncService
 import io.vonley.mi.ui.compose.screens.consoles.domain.model.Console
 import io.vonley.mi.models.enums.Feature
 import io.vonley.mi.models.enums.PlatformType

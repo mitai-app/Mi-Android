@@ -12,7 +12,7 @@ import io.vonley.mi.BuildConfig
 import io.vonley.mi.R
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
 import io.vonley.mi.di.modules.LocalStorageModule
-import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
+import io.vonley.mi.ui.compose.screens.consoles.domain.remote.SyncService
 import io.vonley.mi.ui.main.MainContract
 import io.vonley.mi.utils.SharedPreferenceManager
 import javax.inject.Inject

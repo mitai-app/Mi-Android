@@ -12,7 +12,7 @@ import io.vonley.mi.di.network.handlers.ClientHandler
 import io.vonley.mi.di.network.listeners.OnConsoleListener
 import io.vonley.mi.models.Payload
 import io.vonley.mi.models.enums.Feature
-import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
+import io.vonley.mi.ui.compose.screens.consoles.domain.remote.SyncService
 import io.vonley.mi.ui.compose.screens.consoles.domain.model.Client
 import io.vonley.mi.utils.SharedPreferenceManager
 import java.net.Socket

@@ -1,13 +1,13 @@
-package io.vonley.mi.di.network.impl
+package io.vonley.mi.ui.compose.screens.ftp.data.remote
 
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import io.vonley.mi.BuildConfig
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
-import io.vonley.mi.di.network.MiFTPClient
+import io.vonley.mi.ui.compose.screens.ftp.domain.remote.MiFTPClient
 import io.vonley.mi.models.enums.Feature
-import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
+import io.vonley.mi.ui.compose.screens.consoles.domain.remote.SyncService
 import io.vonley.mi.utils.SharedPreferenceManager
 import io.vonley.mi.utils.set
 import kotlinx.coroutines.*
