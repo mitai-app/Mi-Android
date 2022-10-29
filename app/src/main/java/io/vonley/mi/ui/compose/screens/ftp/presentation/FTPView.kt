@@ -99,7 +99,7 @@ private fun DirFTPView(files: List<FTPFile>,
 ) {
     Column() {
         composableFun()
-        LazyColumn(contentPadding = PaddingValues(16.dp)) {
+        LazyColumn(contentPadding = PaddingValues(8.dp)) {
             items(
                 items = files,
                 itemContent = {
