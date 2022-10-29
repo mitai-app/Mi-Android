@@ -140,7 +140,7 @@ private fun DirView(dir: FTPFile, onDirClick: (FTPFile) -> Unit) {
         modifier = Modifier
             .padding(horizontal = 8.dp, vertical = 4.dp)
             .fillMaxWidth(),
-        elevation = 2.dp,
+        elevation = 0.dp,
         backgroundColor = Color.White,
         shape = RoundedCornerShape(corner = CornerSize(8.dp)),
         onClick = {
@@ -169,7 +169,7 @@ private fun FileView(file: FTPFile, onFileClick: (FTPFile) -> Unit) {
         modifier = Modifier
             .padding(horizontal = 8.dp, vertical = 4.dp)
             .fillMaxWidth(),
-        elevation = 2.dp,
+        elevation = 0.dp,
         backgroundColor = Color.White,
         shape = RoundedCornerShape(corner = CornerSize(8.dp)),
         onClick = {

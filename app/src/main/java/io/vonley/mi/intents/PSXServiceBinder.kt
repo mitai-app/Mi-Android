@@ -11,7 +11,7 @@ import kotlin.coroutines.CoroutineContext
 
 class PSXServiceBinder @Inject constructor() : Binder(), CoroutineScope {
 
-    protected val job = Job()
+    private val job = Job()
 
     override val coroutineContext: CoroutineContext
         get() = Dispatchers.IO + job
@@ -23,6 +23,6 @@ class PSXServiceBinder @Inject constructor() : Binder(), CoroutineScope {
     lateinit var sync: SyncService
 
     companion object {
-        val TAG = PSXServiceBinder::class.java.name
+        val TAG = PSXServiceBinder::class.simpleName ?: "PSXServiceBinder"
     }
 }

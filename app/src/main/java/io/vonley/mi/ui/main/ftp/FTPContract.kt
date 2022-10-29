@@ -1,7 +1,9 @@
 package io.vonley.mi.ui.main.ftp
 
+import android.view.View
 import androidx.lifecycle.Observer
 import io.vonley.mi.base.BaseContract
+import io.vonley.mi.models.enums.Event
 import org.apache.commons.net.ftp.FTPFile
 import java.io.File
 import java.io.InputStream
@@ -32,8 +34,8 @@ interface FTPContract {
         fun onFTPLongClickDir(view: android.view.View, ftpFile: FTPFile)
         fun onFTPLongClickFile(view: android.view.View, ftpFile: FTPFile)
         fun noTarget()
-        fun onFTPEventCompleted(upload: FTPPresenter.Event)
-        fun onFTPEventFailed(upload: FTPPresenter.Event)
+        fun onFTPEventCompleted(upload: Event)
+        fun onFTPEventFailed(upload: Event)
         fun open()
     }
 

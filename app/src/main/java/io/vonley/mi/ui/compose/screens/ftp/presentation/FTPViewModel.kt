@@ -15,6 +15,8 @@ import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncService
 import io.vonley.mi.ui.compose.screens.ftp.domain.repository.FTPEvent
 import io.vonley.mi.ui.compose.screens.ftp.domain.usecase.*
 import io.vonley.mi.utils.SharedPreferenceManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.apache.commons.net.ftp.FTPFile
@@ -45,10 +47,16 @@ class FTPViewModel @Inject constructor(
 
     private val dirObserver: Observer<Array<out FTPFile>> =  Observer<Array<out FTPFile>> { files ->
         val state = ftpState.value
-        if(state is FTPState.Success) {
-            _ftpDirs.value = FTPState.Success(files.toList(), state.event)
-        } else if (state is FTPState.Error){
-            _ftpDirs.value = FTPState.Success(files.toList())
+        when (state) {
+            is FTPState.Success -> {
+                _ftpDirs.value = FTPState.Success(files.toList(), state.event)
+            }
+            is FTPState.Error -> {
+                _ftpDirs.value = FTPState.Success(files.toList())
+            }
+            is FTPState.Loading -> {
+                _ftpDirs.value = FTPState.Success(files.toList())
+            }
         }
     }
     private var _ftpDirs: MutableState<FTPState> = mutableStateOf(FTPState.Loading(emptyList(), FTPEvent.None))
@@ -63,7 +71,7 @@ class FTPViewModel @Inject constructor(
     }
 
     fun navigateTo(ftpFile: FTPFile) {
-        navigateUseCase(ftpFile).onEach {
+        navigateUseCase(ftpFile).flowOn(Dispatchers.IO).onEach {
             when(it) {
                 is Resource.Error -> handleError(it.status, it.data)
                 is Resource.Loading -> handleLoading(it.status, it.data)
@@ -73,7 +81,7 @@ class FTPViewModel @Inject constructor(
     }
 
     fun navigateTo(path: String) {
-        navigateUseCase(path).onEach {
+        navigateUseCase(path).flowOn(Dispatchers.IO).onEach {
             when(it) {
                 is Resource.Error -> handleError(it.status, it.data)
                 is Resource.Loading -> handleLoading(it.status, it.data)
@@ -140,7 +148,7 @@ class FTPViewModel @Inject constructor(
     }
 
     fun delete(ftpFile: FTPFile) {
-        deleteUseCase(ftpFile).onEach {
+        deleteUseCase(ftpFile).flowOn(Dispatchers.IO).onEach {
             when(it) {
                 is Resource.Error -> handleError(it.status, it.data)
                 is Resource.Loading -> handleLoading(it.status, it.data)
@@ -150,7 +158,7 @@ class FTPViewModel @Inject constructor(
     }
 
     fun download(ftpFile: FTPFile) {
-        downloadUseCase(ftpFile).onEach {
+        downloadUseCase(ftpFile).flowOn(Dispatchers.IO).onEach {
             when(it) {
                 is Resource.Error -> handleError(it.status, it.data)
                 is Resource.Loading -> handleLoading(it.status, it.data)
@@ -160,7 +168,7 @@ class FTPViewModel @Inject constructor(
     }
 
     fun replace(ftpFile: FTPFile, stream: InputStream) {
-        replaceUseCase(ftpFile, stream).onEach {
+        replaceUseCase(ftpFile, stream).flowOn(Dispatchers.IO).onEach {
             when(it) {
                 is Resource.Error -> handleError(it.status, it.data)
                 is Resource.Loading -> handleLoading(it.status, it.data)
@@ -170,7 +178,7 @@ class FTPViewModel @Inject constructor(
     }
 
     fun upload(filename: String, stream: InputStream) {
-        uploadUseCase(filename, stream).onEach {
+        uploadUseCase(filename, stream).flowOn(Dispatchers.IO).onEach {
             when(it) {
                 is Resource.Error -> handleError(it.status, it.data)
                 is Resource.Loading -> handleLoading(it.status, it.data)
@@ -180,7 +188,7 @@ class FTPViewModel @Inject constructor(
     }
 
     fun rename(ftpFile: FTPFile, input: String) {
-        renameUseCase(ftpFile, input).onEach {
+        renameUseCase(ftpFile, input).flowOn(Dispatchers.IO).onEach {
             when(it) {
                 is Resource.Error -> handleError(it.status, it.data)
                 is Resource.Loading -> handleLoading(it.status, it.data)

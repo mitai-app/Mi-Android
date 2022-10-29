@@ -2,6 +2,7 @@ package io.vonley.mi.ui.compose.screens.ftp.domain.usecase
 
 import io.vonley.mi.ui.compose.screens.ftp.domain.repository.FTPRepository
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import org.apache.commons.net.ftp.FTPFile
 import javax.inject.Inject
 

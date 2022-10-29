@@ -24,7 +24,7 @@ import kotlin.coroutines.CoroutineContext
 @AndroidEntryPoint
 class PSXService : Service(), BaseClient {
 
-    override val TAG = PSXService::class.java.name
+    override val TAG: String = PSXService::class.simpleName?:"PSXService"
 
     @Inject
     lateinit var binder: PSXServiceBinder
@@ -66,15 +66,15 @@ class PSXService : Service(), BaseClient {
                         }
 
                         override fun onResponse(call: Call, response: Response) {
-                            response.body?.let { body ->
+                            response.body.let { body ->
                                 val json = JSONObject(body.string())
                                 val version = json.getString("version")
                                 val ver = version.ver
                                 val buildVer = BuildConfig.VERSION_NAME.ver
-                                val compare = ver > buildVer;
+                                val compare = ver > buildVer
                                 if (compare) {
                                     val build = if(json.has("build")){
-                                         json.getString("build")
+                                        json.getString("build")
                                     } else ""
                                     val change = if(json.has("changes")) {
                                         val changesList = json.getJSONArray("changes")
@@ -86,9 +86,6 @@ class PSXService : Service(), BaseClient {
                                     }else ""
                                     this@PSXService.meta = Meta(version, change, build)
                                 }
-
-                            } ?: run {
-
                             }
                         }
 
@@ -114,7 +111,7 @@ class PSXService : Service(), BaseClient {
 
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val onStartCommand = super.onStartCommand(intent, flags, startId)
+        super.onStartCommand(intent, flags, startId)
         if (manager.jbService) {
             Mi.log(Mi.MiEvent.MI_SERVICE_START, Pair("Service", PSXService::class.java.name))
             binder.jb.startService()

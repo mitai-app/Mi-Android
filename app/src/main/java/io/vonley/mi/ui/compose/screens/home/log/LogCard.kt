@@ -68,14 +68,14 @@ fun LogCard(log: MiCMDResponse) {
 fun PreviewLogCardList() {
     val device = Device("PS4","9.00", "192.168.11.45")
     val logs = arrayOf(
-        MiCMDResponse("Initializing setup", MiResponse.Cmd(Minum.initiated), device),
-        MiCMDResponse("Starting Jailbreak", MiResponse.Cmd(Minum.started), device),
-        MiCMDResponse("Press X to Continue", MiResponse.Cmd(Minum.continuee), device),
-        MiCMDResponse("Mi is requesting the payload", MiResponse.Cmd(Minum.payloadReq), device),
-        MiCMDResponse("Payload Sent", MiResponse.Cmd(Minum.payload), device),
-        MiCMDResponse("Pending.....", MiResponse.Cmd(Minum.pending), device),
-        MiCMDResponse("Jailbreak complete", MiResponse.Cmd(Minum.success), device),
-        MiCMDResponse("Jailbreak failed", MiResponse.Cmd(Minum.failed), device),
+        MiCMDResponse("Initializing setup", MiResponse.Cmd(MIEnumCMD.INITIATED), device),
+        MiCMDResponse("Starting Jailbreak", MiResponse.Cmd(MIEnumCMD.STARTED), device),
+        MiCMDResponse("Press X to Continue", MiResponse.Cmd(MIEnumCMD.CONTINUE), device),
+        MiCMDResponse("Mi is requesting the payload", MiResponse.Cmd(MIEnumCMD.PAYLOAD_REQUEST), device),
+        MiCMDResponse("Payload Sent", MiResponse.Cmd(MIEnumCMD.PAYLOAD), device),
+        MiCMDResponse("Pending.....", MiResponse.Cmd(MIEnumCMD.PENDING), device),
+        MiCMDResponse("Jailbreak complete", MiResponse.Cmd(MIEnumCMD.SUCCESS), device),
+        MiCMDResponse("Jailbreak failed", MiResponse.Cmd(MIEnumCMD.FAILED), device),
 
 
     )
@@ -90,5 +90,5 @@ fun PreviewLogCardList() {
 @Composable
 fun PreviewLogCard() {
     val device = Device("PS4","9.00", "192.168.11.45")
-    LogCard(log = MiCMDResponse("Jailbreak complete", MiResponse.Cmd(Minum.success), device))
+    LogCard(log = MiCMDResponse("Jailbreak complete", MiResponse.Cmd(MIEnumCMD.SUCCESS), device))
 }

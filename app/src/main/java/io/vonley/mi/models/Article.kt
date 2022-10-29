@@ -80,10 +80,10 @@ sealed class Article(
 
         override fun hashCode(): Int {
             var result = name.hashCode()
-            result = 31 * result + (description?.hashCode() ?: 0)
+            result = 31 * result + description.hashCode()
             result = 31 * result + (icon?.hashCode() ?: 0)
             result = 31 * result + (link?.hashCode() ?: 0)
-            result = 31 * result + (background?.hashCode() ?: 0)
+            result = 31 * result + background.hashCode()
             result = 31 * result + author.hashCode()
             result = 31 * result + summary.hashCode()
             result = 31 * result + paragraphs.contentHashCode()

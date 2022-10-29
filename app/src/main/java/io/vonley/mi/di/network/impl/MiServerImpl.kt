@@ -386,7 +386,7 @@ class MiServerImpl constructor(
                                         val cmd = mi.data.cmd
                                         val message = mi.response
                                         when (cmd) {
-                                            Minum.initiated -> {
+                                            MIEnumCMD.INITIATED -> {
                                                 callback.onLog("[JB:Initiated] $message")
                                                 val params = arrayOf(
                                                     Pair("console_device", it.device),
@@ -395,7 +395,7 @@ class MiServerImpl constructor(
                                                     Pair("from", MiServer::class.java.name)
                                                 )
                                                 Mi.log(JB_INITIATED, *params)}
-                                            Minum.continuee -> {
+                                            MIEnumCMD.CONTINUE -> {
                                                 callback.onLog("[JB:Continue] $message")
                                                 val params = arrayOf(
                                                     Pair("console_device", it.device),
@@ -404,7 +404,7 @@ class MiServerImpl constructor(
                                                     Pair("from", MiServer::class.java.name)
                                                 )
                                                 Mi.log(JB_CONTINUE, *params)}
-                                            Minum.payloadReq -> {
+                                            MIEnumCMD.PAYLOAD_REQUEST -> {
                                                 callback.onLog("[JB:Payload:Request] $message")
                                                 val params = arrayOf(
                                                     Pair("console_device", it.device),
@@ -414,7 +414,7 @@ class MiServerImpl constructor(
                                                 )
                                                 Mi.log(JB_PAYLOAD_REQUEST, *params)
                                             }
-                                            Minum.started -> {
+                                            MIEnumCMD.STARTED -> {
                                                 callback.onLog("[JB:Started] $message")
                                                 val params = arrayOf(
                                                     Pair("console_device", it.device),
@@ -424,7 +424,7 @@ class MiServerImpl constructor(
                                                 )
                                                 Mi.log(JB_STARTED, *params)
                                             }
-                                            Minum.success -> {
+                                            MIEnumCMD.SUCCESS -> {
                                                 callback.onLog("[Status] Enjoy!")
                                                 callback.onJailbreakSucceeded(message)
                                                 val params = arrayOf(
@@ -435,7 +435,7 @@ class MiServerImpl constructor(
                                                 )
                                                 Mi.log(JB_SUCCESS, *params)
                                             }
-                                            Minum.failed -> {
+                                            MIEnumCMD.FAILED -> {
                                                 callback.onLog("[JB:Failed] Somethings not right...")
                                                 callback.onJailbreakFailed(message)
                                                 val params = arrayOf(
@@ -446,11 +446,11 @@ class MiServerImpl constructor(
                                                 )
                                                 Mi.log(JB_FAILURE, *params)
                                             }
-                                            Minum.payload -> {
+                                            MIEnumCMD.PAYLOAD -> {
                                                 callback.onLog("[Send:Payload] Initializing Payload sender (PS4 about to get blessed.)")
                                                 sendPayload(it, if(console.version == "9.00") 9090 else 9021)
                                             }
-                                            Minum.pending -> {
+                                            MIEnumCMD.PENDING -> {
                                                 callback.onLog("[Send:Pending] Initializing Payload sender (PS4 about to get blessed.)")
                                                 sendPayload(it, if(console.version == "9.00") 9020 else 9021)
                                             }

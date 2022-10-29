@@ -11,65 +11,46 @@ data class MiResponse<T>(
     @SerializedName("data") val data: T,
     var device: Device? = null
 ) {
-    data class Cmd(@SerializedName("cmd") val cmd: Minum)
+    data class Cmd(@SerializedName("cmd") val cmd: MIEnumCMD)
 }
 
 
-enum class Minum {
+enum class MIEnumCMD {
 
     @SerializedName("jb.initiated")
-    initiated,
+    INITIATED,
 
     @SerializedName("jb.started")
-    started,
+    STARTED,
 
     @SerializedName("jb.success")
-    success,
+    SUCCESS,
 
     @SerializedName("jb.failed")
-    failed,
+    FAILED,
 
     @SerializedName("jb.continue")
-    continuee,
+    CONTINUE,
 
     @SerializedName("send.continue")
-    payload,
+    PAYLOAD,
 
     @SerializedName("send.payload.request")
-    payloadReq,
+    PAYLOAD_REQUEST,
 
     @SerializedName("send.pending")
-    pending
+    PENDING
 }
 
-val Minum.bg: Color get() {
+val MIEnumCMD.bg: Color get() {
     return when(this) {
-        Minum.initiated -> Constants.Color.SECONDARY
-        Minum.started -> Constants.Color.Mi.BLUE
-        Minum.success -> Constants.Color.Mi.GREEN
-        Minum.failed -> Constants.Color.Mi.RED
-        Minum.continuee -> Constants.Color.Mi.PURPLE
-        Minum.payload -> Constants.Color.Mi.BLUE
-        Minum.payloadReq -> Constants.Color.Mi.YELLOW
-        Minum.pending -> Constants.Color.Mi.ORANGE
+        MIEnumCMD.INITIATED -> Constants.Color.SECONDARY
+        MIEnumCMD.STARTED -> Constants.Color.Mi.BLUE
+        MIEnumCMD.SUCCESS -> Constants.Color.Mi.GREEN
+        MIEnumCMD.FAILED -> Constants.Color.Mi.RED
+        MIEnumCMD.CONTINUE -> Constants.Color.Mi.PURPLE
+        MIEnumCMD.PAYLOAD -> Constants.Color.Mi.BLUE
+        MIEnumCMD.PAYLOAD_REQUEST -> Constants.Color.Mi.YELLOW
+        MIEnumCMD.PENDING -> Constants.Color.Mi.ORANGE
     }
-       /* switch (this) {
-            case .initiated:
-            return Color("secondary")
-            case .success:
-            return Color("mi.green")
-            case .failed:
-            return Color("mi.red")
-            case .payload:
-            return Color("mi.blue")
-            case .pending:
-            return Color("mi.orange")
-            case .started:
-            return Color("mi.blue")
-            case .continuee:
-            return Color("mi.purple")
-            case .payloadReq:
-            return Color("mi.yellow")
-        }
-    }*/
 }
