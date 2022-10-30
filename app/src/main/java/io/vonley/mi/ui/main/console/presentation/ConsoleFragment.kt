@@ -16,11 +16,11 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import io.vonley.mi.databinding.FragmentConsoleBinding
 import io.vonley.mi.extensions.e
-import io.vonley.mi.ui.compose.screens.consoles.presentation.ConsoleViewModel
-import io.vonley.mi.ui.compose.screens.consoles.domain.model.Console
+import io.vonley.mi.ui.screens.consoles.presentation.ConsoleViewModel
+import io.vonley.mi.ui.screens.consoles.domain.model.Console
 import io.vonley.mi.ui.dialogs.MiInputDialog
 import io.vonley.mi.ui.main.MainContract
-import io.vonley.mi.ui.compose.screens.consoles.domain.model.Client
+import io.vonley.mi.ui.screens.consoles.domain.model.Client
 import io.vonley.mi.ui.main.console.presentation.adapters.ConsoleRecyclerAdapter
 import javax.inject.Inject
 

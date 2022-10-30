@@ -7,7 +7,7 @@ import com.google.gson.GsonBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import io.vonley.mi.BuildConfig
 import io.vonley.mi.Mi
-import io.vonley.mi.base.BaseClient
+import io.vonley.mi.common.base.BaseClient
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
 import io.vonley.mi.utils.Semver
 import io.vonley.mi.utils.SharedPreferenceManager

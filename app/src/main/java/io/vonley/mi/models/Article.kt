@@ -1,7 +1,7 @@
 package io.vonley.mi.models
 
 import androidx.compose.ui.graphics.Color
-import io.vonley.mi.Constants
+import io.vonley.mi.Mi
 
 sealed class Article(
     open val name: String,
@@ -19,7 +19,7 @@ sealed class Article(
         override val link: String?,
     ) : Article(name, description, icon, link) {
 
-        override val background: Color = Constants.Color.TERTIARY //tertiary
+        override val background: Color = Mi.Color.TERTIARY //tertiary
 
     }
 
@@ -30,7 +30,7 @@ sealed class Article(
         override val link: String?,
     ) : Article(name, description, icon, link) {
 
-        override val background: Color = Constants.Color.QUINARY // quinary
+        override val background: Color = Mi.Color.QUINARY // quinary
     }
 
 
@@ -44,7 +44,7 @@ sealed class Article(
         val download: Map<String, String>
     ) : Article(name, description, icon, link) {
 
-        override val background: Color = Constants.Color.QUATERNARY //quaternary
+        override val background: Color = Mi.Color.QUATERNARY //quaternary
     }
 
 
@@ -59,7 +59,7 @@ sealed class Article(
         val credit: String,
     ) : Article(name, description, icon, link) {
 
-        override val background: Color = Constants.Color.PURPLE_DARK //purpleDark
+        override val background: Color = Mi.Color.PURPLE_DARK //purpleDark
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true

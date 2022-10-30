@@ -2,7 +2,7 @@ package io.vonley.mi.models
 
 import androidx.compose.ui.graphics.Color
 import com.google.gson.annotations.SerializedName
-import io.vonley.mi.Constants
+import io.vonley.mi.Mi
 
 typealias MiCMDResponse = MiResponse<MiResponse.Cmd>
 
@@ -44,13 +44,13 @@ enum class MIEnumCMD {
 
 val MIEnumCMD.bg: Color get() {
     return when(this) {
-        MIEnumCMD.INITIATED -> Constants.Color.SECONDARY
-        MIEnumCMD.STARTED -> Constants.Color.Mi.BLUE
-        MIEnumCMD.SUCCESS -> Constants.Color.Mi.GREEN
-        MIEnumCMD.FAILED -> Constants.Color.Mi.RED
-        MIEnumCMD.CONTINUE -> Constants.Color.Mi.PURPLE
-        MIEnumCMD.PAYLOAD -> Constants.Color.Mi.BLUE
-        MIEnumCMD.PAYLOAD_REQUEST -> Constants.Color.Mi.YELLOW
-        MIEnumCMD.PENDING -> Constants.Color.Mi.ORANGE
+        MIEnumCMD.INITIATED -> Mi.Color.SECONDARY
+        MIEnumCMD.STARTED -> Mi.Color.Mi.BLUE
+        MIEnumCMD.SUCCESS -> Mi.Color.Mi.GREEN
+        MIEnumCMD.FAILED -> Mi.Color.Mi.RED
+        MIEnumCMD.CONTINUE -> Mi.Color.Mi.PURPLE
+        MIEnumCMD.PAYLOAD -> Mi.Color.Mi.BLUE
+        MIEnumCMD.PAYLOAD_REQUEST -> Mi.Color.Mi.YELLOW
+        MIEnumCMD.PENDING -> Mi.Color.Mi.ORANGE
     }
 }

@@ -4,7 +4,7 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import io.vonley.mi.ui.compose.screens.ftp.domain.remote.MiFTPClient
+import io.vonley.mi.ui.screens.ftp.domain.remote.MiFTPClient
 import io.vonley.mi.di.network.MiServer
 import io.vonley.mi.di.network.PSXService
 import io.vonley.mi.di.network.impl.*
@@ -18,13 +18,13 @@ import io.vonley.mi.di.network.protocols.ps3mapi.PS3MAPI
 import io.vonley.mi.di.network.protocols.ps3mapi.PS3MAPIImpl
 import io.vonley.mi.di.network.protocols.webman.WebManImpl
 import io.vonley.mi.di.network.protocols.webman.Webman
-import io.vonley.mi.ui.compose.screens.packages.data.repository.PackageRepositoryImpl
-import io.vonley.mi.ui.compose.screens.packages.domain.repository.PackageRepository
-import io.vonley.mi.ui.compose.screens.consoles.domain.remote.SyncService
-import io.vonley.mi.ui.compose.screens.consoles.data.remote.SyncServiceImpl
-import io.vonley.mi.ui.compose.screens.ftp.data.remote.MiFTPClientImpl
-import io.vonley.mi.ui.compose.screens.packages.data.remote.RemotePackageInstallerImpl
-import io.vonley.mi.ui.compose.screens.packages.domain.remote.RemotePackageInstaller
+import io.vonley.mi.ui.screens.packages.data.repository.PackageRepositoryImpl
+import io.vonley.mi.ui.screens.packages.domain.repository.PackageRepository
+import io.vonley.mi.ui.screens.consoles.domain.remote.SyncService
+import io.vonley.mi.ui.screens.consoles.data.remote.SyncServiceImpl
+import io.vonley.mi.ui.screens.ftp.data.remote.MiFTPClientImpl
+import io.vonley.mi.ui.screens.packages.data.remote.RemotePackageInstallerImpl
+import io.vonley.mi.ui.screens.packages.domain.remote.RemotePackageInstaller
 import javax.inject.Singleton
 
 

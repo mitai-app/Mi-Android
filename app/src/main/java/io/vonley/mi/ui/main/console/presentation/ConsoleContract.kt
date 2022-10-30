@@ -1,8 +1,8 @@
 package io.vonley.mi.ui.main.console.presentation
 
-import io.vonley.mi.base.BaseContract
+import io.vonley.mi.common.base.BaseContract
 import io.vonley.mi.di.network.listeners.OnConsoleListener
-import io.vonley.mi.ui.compose.screens.consoles.domain.model.Client
+import io.vonley.mi.ui.screens.consoles.domain.model.Client
 
 interface ConsoleContract {
 

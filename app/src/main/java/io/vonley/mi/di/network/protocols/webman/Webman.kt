@@ -10,7 +10,7 @@ import io.vonley.mi.di.network.protocols.common.cmds.Buzzer
 import io.vonley.mi.di.network.protocols.webman.models.Game
 import io.vonley.mi.di.network.protocols.webman.models.GameType
 import io.vonley.mi.models.enums.Feature
-import io.vonley.mi.ui.compose.screens.consoles.data.remote.get
+import io.vonley.mi.ui.screens.consoles.data.remote.get
 import okhttp3.ResponseBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document

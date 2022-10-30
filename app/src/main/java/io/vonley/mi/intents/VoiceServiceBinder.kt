@@ -7,7 +7,7 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 import kotlinx.coroutines.*
-import io.vonley.mi.helpers.Voice
+import io.vonley.mi.di.services.VoiceService
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
@@ -17,7 +17,7 @@ import kotlin.coroutines.CoroutineContext
 
 
 class VoiceServiceBinder @Inject constructor(
-    private val voice: Voice
+    private val voice: VoiceService
 ) : Binder(), Observer<List<Any>>, CoroutineScope {
 
     private var schedule: ScheduledFuture<*>? = null

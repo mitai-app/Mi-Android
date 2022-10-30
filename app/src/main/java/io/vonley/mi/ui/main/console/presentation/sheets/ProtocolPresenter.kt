@@ -1,6 +1,6 @@
 package io.vonley.mi.ui.main.console.presentation.sheets
 
-import io.vonley.mi.base.BasePresenter
+import io.vonley.mi.common.base.BasePresenter
 import io.vonley.mi.di.network.PSXService
 import javax.inject.Inject
 

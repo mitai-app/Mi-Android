@@ -9,15 +9,14 @@ import android.text.style.StyleSpan
 import io.vonley.mi.di.network.PSXService
 import io.vonley.mi.extensions.d
 import io.vonley.mi.extensions.e
-import io.vonley.mi.ui.compose.screens.consoles.data.remote.get
-import io.vonley.mi.ui.compose.screens.consoles.data.remote.set
+import io.vonley.mi.ui.screens.consoles.data.remote.get
+import io.vonley.mi.ui.screens.consoles.data.remote.set
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
 import java.io.OutputStream
-import java.io.PrintWriter
 import java.net.Socket
 import javax.inject.Inject
 import kotlin.coroutines.CoroutineContext

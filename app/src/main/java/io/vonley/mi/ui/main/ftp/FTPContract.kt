@@ -2,7 +2,7 @@ package io.vonley.mi.ui.main.ftp
 
 import android.view.View
 import androidx.lifecycle.Observer
-import io.vonley.mi.base.BaseContract
+import io.vonley.mi.common.base.BaseContract
 import io.vonley.mi.models.enums.Event
 import org.apache.commons.net.ftp.FTPFile
 import java.io.File

@@ -15,15 +15,13 @@ import io.vonley.mi.intents.PSXService
 @HiltAndroidApp
 class MiApplication : Application() {
 
-    val SERVICE_NAME = "Mi Service"
-    val SERVICE_TYPE = "_http._tcp."
-
-    val TAG = "MiApplication:NSD"
-
     override fun onCreate() {
         super.onCreate()
         startService(Intent(this, PSXService::class.java))
     }
 
+    companion object {
+        const val TAG = "MiApplication"
+    }
 
 }

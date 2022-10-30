@@ -1,6 +1,6 @@
 package io.vonley.mi.ui.main.console.presentation.sheets
 
-import io.vonley.mi.base.BaseContract
+import io.vonley.mi.common.base.BaseContract
 
 interface ProtocolContract {
     interface View : BaseContract.View {

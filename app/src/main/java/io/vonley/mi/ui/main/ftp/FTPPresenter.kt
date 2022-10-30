@@ -3,11 +3,11 @@ package io.vonley.mi.ui.main.ftp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import io.vonley.mi.base.BasePresenter
+import io.vonley.mi.common.base.BasePresenter
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
-import io.vonley.mi.ui.compose.screens.ftp.domain.remote.MiFTPClient
+import io.vonley.mi.ui.screens.ftp.domain.remote.MiFTPClient
 import io.vonley.mi.models.enums.Event
-import io.vonley.mi.ui.compose.screens.consoles.domain.remote.SyncService
+import io.vonley.mi.ui.screens.consoles.domain.remote.SyncService
 import io.vonley.mi.utils.SharedPreferenceManager
 import org.apache.commons.net.ftp.FTPFile
 import java.io.InputStream

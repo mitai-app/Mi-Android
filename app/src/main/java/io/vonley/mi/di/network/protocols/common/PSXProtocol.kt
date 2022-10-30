@@ -1,6 +1,6 @@
 package io.vonley.mi.di.network.protocols.common
 
-import io.vonley.mi.base.BaseClient
+import io.vonley.mi.common.base.BaseClient
 import io.vonley.mi.di.network.PSXService
 import io.vonley.mi.di.network.protocols.common.cmds.Boot
 import io.vonley.mi.di.network.protocols.common.cmds.Buzzer
