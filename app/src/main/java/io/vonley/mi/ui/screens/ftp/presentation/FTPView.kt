@@ -21,7 +21,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import io.vonley.mi.ui.compose.ComposableFun
+import io.vonley.mi.ui.ComposableFun
 import io.vonley.mi.ui.screens.ftp.domain.repository.FTPEvent
 import org.apache.commons.net.ftp.FTPFile
 

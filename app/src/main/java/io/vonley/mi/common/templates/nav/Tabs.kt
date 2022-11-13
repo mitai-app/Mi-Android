@@ -14,7 +14,7 @@ import com.google.accompanist.pager.PagerState
 import com.google.accompanist.pager.pagerTabIndicatorOffset
 import com.google.accompanist.pager.rememberPagerState
 import io.vonley.mi.Mi
-import io.vonley.mi.ui.compose.TabItem
+import io.vonley.mi.ui.TabItem
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalPagerApi::class)

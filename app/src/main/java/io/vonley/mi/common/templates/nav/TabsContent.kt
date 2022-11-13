@@ -6,7 +6,7 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.PagerState
 import com.google.accompanist.pager.rememberPagerState
-import io.vonley.mi.ui.compose.TabItem
+import io.vonley.mi.ui.TabItem
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable

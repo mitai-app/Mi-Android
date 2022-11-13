@@ -15,7 +15,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import io.vonley.mi.Mi
-import io.vonley.mi.ui.compose.TabItem
+import io.vonley.mi.ui.TabItem
 
 @Composable
 fun BottomNavigationBar(navController: NavHostController) {
