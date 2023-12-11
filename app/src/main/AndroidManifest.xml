@@ -24,7 +24,7 @@
         <activity
             android:launchMode="singleInstance"
             android:taskAffinity=""
-            android:name="io.vonley.mi.ui.MainActivity"
+            android:name="io.vonley.mi.ui.main.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -36,7 +36,7 @@
         <activity
             android:launchMode="singleInstance"
             android:taskAffinity=""
-            android:name="io.vonley.mi.ui.main.MainActivity"
+            android:name="io.vonley.mi.ui.MainActivity"
             android:exported="true"/>
         <!--
         <meta-data
