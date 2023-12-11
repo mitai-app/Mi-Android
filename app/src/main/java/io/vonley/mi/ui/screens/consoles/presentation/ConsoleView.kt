@@ -80,7 +80,7 @@ fun PreviewConsoleView() {
     //ConsolesView()
     val consoles = arrayOf(
         Console(
-            ip = "192.168.11.45",
+            ip = "192.168.1.184",
             name = "PS4",
             type = PlatformType.PS4,
             features = arrayListOf(
@@ -91,7 +91,7 @@ fun PreviewConsoleView() {
             pinned = true
         ),
         Console(
-            ip = "192.168.11.46",
+            ip = "192.168.11.185",
             name = "PS3",
             type = PlatformType.PS3,
             features = arrayListOf(
@@ -102,7 +102,7 @@ fun PreviewConsoleView() {
             pinned = true
         ),
         Console(
-            ip = "192.168.11.47",
+            ip = "192.168.1.1",
             name = "Unknown",
             type = PlatformType.UNKNOWN,
             features = arrayListOf(

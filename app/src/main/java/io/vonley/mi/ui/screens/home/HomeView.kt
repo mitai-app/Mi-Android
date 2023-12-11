@@ -1,4 +1,4 @@
-package io.vonley.mi.ui.screens
+package io.vonley.mi.ui.screens.home
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Column

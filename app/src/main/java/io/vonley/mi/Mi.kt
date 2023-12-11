@@ -38,7 +38,7 @@ object Mi {
         }
     }
 
-    private val analytics: FirebaseAnalytics = Firebase.analytics
+    private val analytics: FirebaseAnalytics get() = Firebase.analytics
 
     fun log(
         event: MiEvent,

@@ -17,9 +17,9 @@ import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import io.vonley.mi.common.templates.nav.BottomNavigationBar
 import io.vonley.mi.common.templates.nav.TopBar
-import io.vonley.mi.ui.screens.*
 import io.vonley.mi.ui.screens.consoles.presentation.ConsolesView
 import io.vonley.mi.ui.screens.ftp.presentation.FTPView
+import io.vonley.mi.ui.screens.home.HomeView
 import io.vonley.mi.ui.screens.packages.presentation.RepositoryView
 import io.vonley.mi.ui.screens.settings.SettingsView
 

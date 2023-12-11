@@ -16,6 +16,7 @@ import io.vonley.mi.ui.screens.consoles.domain.usecase.SelectConsoleUseCase
 import io.vonley.mi.utils.SharedPreferenceManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -42,7 +43,8 @@ class ConsoleViewModel @Inject constructor(
             }.onCompletion { error ->
                 if (error != null) {
                     "Error ${error.message}".e("ERROR", error)
-                    _consoles.value = ConsoleState.Error("Unable to fetch consoles: ${error.message}")
+                    _consoles.value =
+                        ConsoleState.Error("Unable to fetch consoles: ${error.message}")
                 }
             }.catch { error ->
                 "Error ${error.message}".e("ERROR", error)
@@ -50,22 +52,19 @@ class ConsoleViewModel @Inject constructor(
             }.launchIn(viewModelScope)
     }
 
-    fun addConsole(input: String) {
-        addConsoleUseCase(input).onEach { console ->
+    fun addConsole(input: String) = viewModelScope.launch {
+        addConsoleUseCase(input).collect { console ->
 
-        }.launchIn(viewModelScope)
+        }
     }
 
-    fun pin(client: Client) {
-        suspend {
-            addConsoleUseCase.pin(client.ip, true)
-        }.asFlow().launchIn(viewModelScope)
+
+    fun pin(client: Client) = viewModelScope.launch {
+        addConsoleUseCase.pin(client.ip, true)
     }
 
-    fun unpin(client: Client) {
-        suspend {
-            addConsoleUseCase.pin(client.ip, false)
-        }.asFlow().launchIn(viewModelScope)
+    fun unpin(client: Client) = viewModelScope.launch {
+        addConsoleUseCase.pin(client.ip, false)
     }
 
     fun select(console: Console) {
