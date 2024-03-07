@@ -1,5 +1,9 @@
 package io.vonley.mi.ui.screens.ftp.presentation
 
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,13 +21,33 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.Fragment
 import androidx.hilt.navigation.compose.hiltViewModel
+import dagger.hilt.android.AndroidEntryPoint
 import io.vonley.mi.ui.ComposableFun
 import io.vonley.mi.ui.screens.ftp.domain.repository.FTPEvent
 import org.apache.commons.net.ftp.FTPFile
+
+
+
+@AndroidEntryPoint
+class FTPFragmentView: Fragment() {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        return ComposeView(requireContext()).apply {
+            setContent {
+                FTPView()
+            }
+        }
+    }
+}
 
 @Composable
 fun FTPView() {

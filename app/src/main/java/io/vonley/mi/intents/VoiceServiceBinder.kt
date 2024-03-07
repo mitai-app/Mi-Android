@@ -159,10 +159,10 @@ class VoiceServiceBinder @Inject constructor(
         callback = null
     }
 
-    override fun onChanged(list: List<Any>?) {
+    override fun onChanged(value: List<Any>) {
 
         //val result = (list - stack) - processed
-        val result = list?: emptyList()
+        val result = value?: emptyList()
         stack.addAll(result)
         if (!voice.speaking) {
             start()

@@ -1,5 +1,9 @@
 package io.vonley.mi.ui.screens.consoles.presentation
 
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,18 +18,39 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.fragment.app.Fragment
 import androidx.hilt.navigation.compose.hiltViewModel
+import dagger.hilt.android.AndroidEntryPoint
 import io.vonley.mi.R
 import io.vonley.mi.models.enums.Feature
 import io.vonley.mi.models.enums.PlatformType
 import io.vonley.mi.ui.screens.consoles.domain.model.Console
 import io.vonley.mi.ui.screens.consoles.domain.model.color
+
+
+@AndroidEntryPoint
+class ConsoleFragmentView: Fragment() {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        return ComposeView(requireContext()).apply {
+            setContent {
+                ConsolesView()
+            }
+        }
+    }
+}
 
 @Composable
 fun ConsolesView() {
@@ -57,6 +82,7 @@ fun ConsoleViewState(
             is ConsoleState.Error -> {
 
             }
+
             is ConsoleState.Success -> {
                 state.repos.forEach {
                     ConsoleView(
@@ -66,6 +92,7 @@ fun ConsoleViewState(
                     )
                 }
             }
+
             ConsoleState.Loading -> {
 
             }
@@ -118,7 +145,7 @@ fun PreviewConsoleView() {
             ConsoleView(
                 console = it,
                 onConsoleClick = { console ->
-
+                    //vm.select(console)
                 },
                 onConsolePin = { console, pinned ->
 
@@ -152,11 +179,10 @@ fun ConsoleView(
         )
     ) {
         Row(
-            modifier = Modifier.padding(24.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
-
             Image(
-                painter = painterResource(id = R.drawable.icon_svg_monitor),
+                painter = rememberVectorPainter(ImageVector.vectorResource(R.drawable.icon_svg_monitor)),
                 modifier = Modifier
                     .width(42.dp)
                     .height(42.dp)
@@ -168,7 +194,7 @@ fun ConsoleView(
 
             Column(
                 modifier = Modifier
-                    .padding(24.dp, 0.dp)
+                    .padding(16.dp, 0.dp)
             ) {
                 Text(
                     text = console.name,

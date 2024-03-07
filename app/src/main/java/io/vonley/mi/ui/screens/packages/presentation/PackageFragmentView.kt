@@ -1,5 +1,9 @@
 package io.vonley.mi.ui.screens.packages.presentation
 
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,11 +23,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.Fragment
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
+import dagger.hilt.android.AndroidEntryPoint
 import io.vonley.mi.Mi
 import io.vonley.mi.extensions.isLink
 import io.vonley.mi.ui.screens.packages.data.local.entity.Package
@@ -32,9 +39,24 @@ import io.vonley.mi.ui.screens.packages.data.local.entity.Repo
 import io.vonley.mi.common.templates.textfield.CustomTextField
 
 
+@AndroidEntryPoint
+class PackageFragmentView: Fragment() {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        return ComposeView(requireContext()).apply {
+            setContent {
+                RepositoryView()
+            }
+        }
+    }
+}
+
 @Composable
 fun RepositoryView() {
-    val vm = hiltViewModel<RepoViewModel>()
+    val vm = hiltViewModel<PackageViewModel>()
     val repoState by remember { vm.repoState }
     RepoViewState(
         state = repoState,
@@ -53,7 +75,7 @@ fun RepositoryView() {
 
 @Composable
 fun RepoViewState(
-    state: RepoState,
+    state: PackageState,
     onSearchChange: (String) -> Unit,
     onAddRepoClick: (String) -> Unit
 ) {
@@ -74,17 +96,17 @@ fun RepoViewState(
             AddRepo(link = search.value, onClick = onAddRepoClick)
         } else {
             when (state) {
-                is RepoState.Loading -> {
+                is PackageState.Loading -> {
                     LoadingRepo()
                 }
-                is RepoState.Success -> {
+                is PackageState.Success -> {
                     if (state.repos.isNotEmpty()) {
                         RepoListView(state.repos)
                     } else {
                         EmptyRepo()
                     }
                 }
-                is RepoState.Error -> {
+                is PackageState.Error -> {
                     ErrorRepo(state.error)
                 }
             }
@@ -427,7 +449,7 @@ fun PreviewRepoView() {
             )
         )
     )
-    val state = RepoState.Success(
+    val state = PackageState.Success(
         repos = arrayListOf(
             elements, elements
         )

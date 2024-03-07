@@ -61,7 +61,7 @@ class ConsoleFragment : Fragment(), ConsoleContract.View, Observer<List<Console>
         override fun onSwiped(viewHolder: RecyclerView.ViewHolder, swipeDir: Int) {
             val vh = viewHolder as ConsoleRecyclerAdapter.ConsoleViewHolder
             val pos = viewHolder.bindingAdapterPosition
-            val client = vh.client?:return
+            val client = vh.client ?: return
             if (swipeDir == ItemTouchHelper.LEFT) {
                 vm.unpin(client)
             } else if (swipeDir == ItemTouchHelper.RIGHT) {
@@ -79,6 +79,7 @@ class ConsoleFragment : Fragment(), ConsoleContract.View, Observer<List<Console>
         _binding = FragmentConsoleBinding.inflate(inflater, container, false)
         return binding.root
     }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.consoleRecycler.adapter = adapter
@@ -147,17 +148,13 @@ class ConsoleFragment : Fragment(), ConsoleContract.View, Observer<List<Console>
     override val TAG: String
         get() = ConsoleFragment::class.java.name
 
-    override fun onChanged(consoles: List<Console>?) {
+    override fun onChanged(consoles: List<Console>) {
         "Called $consoles".e("OK")
-        consoles?.let { consoles ->
-            if (consoles.isNotEmpty()) {
-                "NOT EMPTY".e("OK")
-                adapter.setData(consoles)
-            } else {
-                "EMPTY".e("CRAZY")
-            }
-        } ?: kotlin.run {
-            "Null?".e("WOW")
+        if (consoles.isNotEmpty()) {
+            "NOT EMPTY".e("OK")
+            adapter.setData(consoles)
+        } else {
+            "EMPTY".e("CRAZY")
         }
     }
 

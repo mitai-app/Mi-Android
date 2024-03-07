@@ -14,13 +14,13 @@ import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
 
 @HiltViewModel
-class RepoViewModel @Inject constructor(
+class PackageViewModel @Inject constructor(
     private val repoUseCase: GetRepositoryUseCase,
     private val addRepoUseCase: AddRepositoryUseCase
 ) : ViewModel() {
 
-    private val _repoState: MutableState<RepoState> = mutableStateOf(RepoState.Loading)
-    val repoState: State<RepoState> get() = _repoState
+    private val _repoState: MutableState<PackageState> = mutableStateOf(PackageState.Loading)
+    val repoState: State<PackageState> get() = _repoState
 
     init {
         getRepos()
@@ -30,13 +30,13 @@ class RepoViewModel @Inject constructor(
         repoUseCase().onEach { result ->
             when (result) {
                 is Resource.Success -> {
-                    _repoState.value = RepoState.Success(result.data ?: emptyList())
+                    _repoState.value = PackageState.Success(result.data ?: emptyList())
                 }
                 is Resource.Error -> {
-                    _repoState.value = RepoState.Error(error = result.status ?: "An unexpected error occurred")
+                    _repoState.value = PackageState.Error(error = result.status ?: "An unexpected error occurred")
                 }
                 is Resource.Loading -> {
-                    _repoState.value = RepoState.Loading
+                    _repoState.value = PackageState.Loading
                 }
             }
         }.launchIn(viewModelScope)
@@ -46,13 +46,13 @@ class RepoViewModel @Inject constructor(
         repoUseCase(search).onEach { result ->
             when (result) {
                 is Resource.Success -> {
-                    _repoState.value = RepoState.Success(result.data ?: emptyList())
+                    _repoState.value = PackageState.Success(result.data ?: emptyList())
                 }
                 is Resource.Error -> {
-                    _repoState.value = RepoState.Error(error = result.status ?: "An unexpected error occurred")
+                    _repoState.value = PackageState.Error(error = result.status ?: "An unexpected error occurred")
                 }
                 is Resource.Loading -> {
-                    _repoState.value = RepoState.Loading
+                    _repoState.value = PackageState.Loading
                 }
             }
         }.launchIn(viewModelScope)
@@ -63,14 +63,14 @@ class RepoViewModel @Inject constructor(
             var value = repoState.value
             when(result) {
                 is Resource.Error -> {
-                    _repoState.value = RepoState.Error("Unable to add repo...")
+                    _repoState.value = PackageState.Error("Unable to add repo...")
                 }
                 is Resource.Loading -> {
                     // Dont do anything
                 }
                 is Resource.Success -> {
-                    if(value is RepoState.Success) {
-                        value = RepoState.Success(value.repos + result.data!!)
+                    if(value is PackageState.Success) {
+                        value = PackageState.Success(value.repos + result.data!!)
                     }
                     _repoState.value = value
                 }

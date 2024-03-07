@@ -20,7 +20,7 @@ class FTPPresenter @Inject constructor(
     @SharedPreferenceStorage val manager: SharedPreferenceManager
 ) : BasePresenter(), FTPContract.Presenter {
     override val currentPath: String
-        get() = manager.ftpPath ?:"/"
+        get() = manager.ftpPath ?: "/"
 
     override fun navigateTo(ftpFile: FTPFile) {
         launch {
@@ -140,12 +140,8 @@ class FTPPresenter @Inject constructor(
     override val TAG: String
         get() = FTPPresenter::class.java.name
 
-    override fun onChanged(t: Array<out FTPFile>?) {
-        t?.let {
-            view.onFTPDirOpened(it)
-        } ?: run {
-            //TODO nothing?
-        }
+    override fun onChanged(value: Array<out FTPFile>) {
+        view.onFTPDirOpened(value)
     }
 
 }
