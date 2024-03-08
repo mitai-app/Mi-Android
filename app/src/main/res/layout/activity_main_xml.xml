@@ -112,7 +112,7 @@
             app:itemIconTint="@color/tab_selected_color"
             app:itemTextColor="@color/tab_selected_color"
             app:labelVisibilityMode="auto"
-            app:menu="@menu/bottom_menu" />
+            app:menu="@menu/bottom_menu_compose" />
 
     </com.google.android.material.bottomappbar.BottomAppBar>
 

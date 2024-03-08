@@ -11,6 +11,7 @@ import androidx.compose.material.Button
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,6 +29,7 @@ import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import io.vonley.mi.common.templates.nav.BottomNavigationBar
 import io.vonley.mi.common.templates.nav.TopBar
+import io.vonley.mi.ui.ComposableFun
 import io.vonley.mi.ui.MainViewModel
 import io.vonley.mi.ui.TabItem
 import io.vonley.mi.ui.screens.consoles.presentation.ConsolesView
@@ -47,6 +49,46 @@ class MainActivity : ComponentActivity() {
 
 }
 
+@Composable
+fun MainView() {
+    val navController = rememberNavController()
+    scaffold(navController = navController) {
+        NavHost(navController = navController, TabItem.Home.route) {
+            composable(TabItem.Home.route) {
+                HomeView()
+            }
+            composable(TabItem.Consoles.route) {
+                ConsolesView()
+            }
+            composable(TabItem.Packages.route) {
+                RepositoryView()
+            }
+            composable(TabItem.Ftp.route) {
+                FTPView()
+            }
+            composable(TabItem.Settings.route) {
+                SettingsView()
+            }
+        }
+    }
+}
+
+@Composable
+fun scaffold(navController: NavHostController, builder: ComposableFun) {
+    Scaffold(
+        topBar = { TopBar() },
+        bottomBar = {
+            BottomNavigationBar(navController)
+        },
+        content = { padding -> // We have to pass the scaffold inner padding to our content. That's why we use Box.
+            Box(modifier = Modifier.padding(padding)) {
+                builder()
+            }
+        },
+        backgroundColor = Color.White // Set background color to avoid the white flashing when you switch between screens
+    )
+}
+
 
 @Composable
 fun Root() {
@@ -63,22 +105,25 @@ fun Root() {
                 val viewModel =
                     it.sharedViewModel<MainViewModel>(navController = navController)
                 Button(
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier
+                        .padding(16.dp)
                         .fillMaxWidth(),
                     onClick = {
-                    navController.navigate(route = "overview") {
-                        popUpTo(route = "auth") {
-                            //A, B[Our Nav Graph Here], C, D[Our Screen Is Here]  -> E (overview)
-                            //A -> E
-                            inclusive =
-                                true // it would also pop this current view out the backstack
+                        navController.navigate(route = "overview") {
+                            popUpTo(route = "auth") {
+                                //A, B[Our Nav Graph Here], C, D[Our Screen Is Here]  -> E (overview)
+                                //A -> E
+                                inclusive =
+                                    true // it would also pop this current view out the backstack
+                            }
                         }
-                    }
-                }) {
+                    }) {
 
-                    Text(text = "Example", modifier = Modifier
-                        .padding(16.dp)
-                        .wrapContentHeight(), fontSize=22.sp)
+                    Text(
+                        text = "Example", modifier = Modifier
+                            .padding(16.dp)
+                            .wrapContentHeight(), fontSize = 22.sp
+                    )
                 }
             }
 
@@ -98,8 +143,8 @@ fun Root() {
             startDestination = "main",
             route = "overview"
         ) {
-            composable(route = "main") {
-                MainScreen(navController)
+            composable("main") {
+                MainView()
             }
         }
     }
@@ -112,42 +157,6 @@ inline fun <reified T : ViewModel> NavBackStackEntry.sharedViewModel(navControll
         navController.getBackStackEntry(navGraphRoute)
     }
     return viewModel(viewModelStoreOwner = parentEntry)
-}
-
-@Composable
-fun MainScreen(navController: NavHostController = rememberNavController()) {
-    Scaffold(
-        topBar = { TopBar() },
-        bottomBar = { BottomNavigationBar(navController) },
-        content = { padding -> // We have to pass the scaffold inner padding to our content. That's why we use Box.
-            Box(modifier = Modifier.padding(padding)) {
-                Navigation(navController = navController)
-            }
-        },
-        backgroundColor = Color.White // Set background color to avoid the white flashing when you switch between screens
-    )
-}
-
-
-@Composable
-fun Navigation(navController: NavHostController) {
-    NavHost(navController, startDestination = TabItem.Home.route) {
-        composable(TabItem.Home.route) {
-            HomeView()
-        }
-        composable(TabItem.Consoles.route) {
-            ConsolesView()
-        }
-        composable(TabItem.Packages.route) {
-            RepositoryView()
-        }
-        composable(TabItem.Ftp.route) {
-            FTPView()
-        }
-        composable(TabItem.Settings.route) {
-            SettingsView()
-        }
-    }
 }
 
 

@@ -1,6 +1,7 @@
 package io.vonley.mi
 
 import android.app.Application
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.nsd.NsdManager
@@ -19,7 +20,8 @@ class MiApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         FirebaseApp.initializeApp(this)
-        startService(Intent(this, PSXService::class.java))
+        val intent =  Intent(this, PSXService::class.java)
+        startService(intent)
     }
 
     companion object {
