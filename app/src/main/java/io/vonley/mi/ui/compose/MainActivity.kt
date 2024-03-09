@@ -7,9 +7,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.material.Button
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -95,8 +95,7 @@ fun Root() {
                             popUpTo(route = "auth") {
                                 //A, B[Our Nav Graph Here], C, D[Our Screen Is Here]  -> E (overview)
                                 //A -> E
-                                inclusive =
-                                    true // it would also pop this current view out the backstack
+                                inclusive = true // it would also pop this current view out the backstack
                             }
                         }
                     }) {
@@ -144,7 +143,7 @@ fun scaffold(navController: NavHostController, builder: ComposableFun) {
                 builder()
             }
         },
-        backgroundColor = Color.White // Set background color to avoid the white flashing when you switch between screens
+        containerColor = Color.White // Set background color to avoid the white flashing when you switch between screens
     )
 }
 
