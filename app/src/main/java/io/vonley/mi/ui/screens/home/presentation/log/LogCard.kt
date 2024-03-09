@@ -1,4 +1,4 @@
-package io.vonley.mi.ui.screens.home.log
+package io.vonley.mi.ui.screens.home.presentation.log
 
 
 import androidx.compose.foundation.ScrollState

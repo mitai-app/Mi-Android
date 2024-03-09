@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import io.vonley.mi.R
 import io.vonley.mi.ui.screens.consoles.presentation.ConsolesView
 import io.vonley.mi.ui.screens.ftp.presentation.FTPView
-import io.vonley.mi.ui.screens.home.HomeView
+import io.vonley.mi.ui.screens.home.presentation.HomeView
 import io.vonley.mi.ui.screens.packages.presentation.RepositoryView
 import io.vonley.mi.ui.screens.settings.SettingsView
 

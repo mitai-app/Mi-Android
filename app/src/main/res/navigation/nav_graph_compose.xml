@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/fragment_home_view"
-        android:name="io.vonley.mi.ui.screens.home.HomeFragmentView"
+        android:name="io.vonley.mi.ui.screens.home.presentation.HomeFragmentView"
         android:label="Consoles">
 
         <action

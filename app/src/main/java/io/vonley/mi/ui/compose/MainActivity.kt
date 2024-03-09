@@ -11,7 +11,6 @@ import androidx.compose.material.Button
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,7 +33,7 @@ import io.vonley.mi.ui.MainViewModel
 import io.vonley.mi.ui.TabItem
 import io.vonley.mi.ui.screens.consoles.presentation.ConsolesView
 import io.vonley.mi.ui.screens.ftp.presentation.FTPView
-import io.vonley.mi.ui.screens.home.HomeView
+import io.vonley.mi.ui.screens.home.presentation.HomeView
 import io.vonley.mi.ui.screens.packages.presentation.RepositoryView
 import io.vonley.mi.ui.screens.settings.SettingsView
 
@@ -72,23 +71,6 @@ fun MainView() {
         }
     }
 }
-
-@Composable
-fun scaffold(navController: NavHostController, builder: ComposableFun) {
-    Scaffold(
-        topBar = { TopBar() },
-        bottomBar = {
-            BottomNavigationBar(navController)
-        },
-        content = { padding -> // We have to pass the scaffold inner padding to our content. That's why we use Box.
-            Box(modifier = Modifier.padding(padding)) {
-                builder()
-            }
-        },
-        backgroundColor = Color.White // Set background color to avoid the white flashing when you switch between screens
-    )
-}
-
 
 @Composable
 fun Root() {
@@ -149,6 +131,24 @@ fun Root() {
         }
     }
 }
+
+@Composable
+fun scaffold(navController: NavHostController, builder: ComposableFun) {
+    Scaffold(
+        topBar = { TopBar() },
+        bottomBar = {
+            BottomNavigationBar(navController)
+        },
+        content = { padding -> // We have to pass the scaffold inner padding to our content. That's why we use Box.
+            Box(modifier = Modifier.padding(padding)) {
+                builder()
+            }
+        },
+        backgroundColor = Color.White // Set background color to avoid the white flashing when you switch between screens
+    )
+}
+
+
 
 @Composable
 inline fun <reified T : ViewModel> NavBackStackEntry.sharedViewModel(navController: NavHostController): T {

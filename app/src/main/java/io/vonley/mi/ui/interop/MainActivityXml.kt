@@ -22,18 +22,70 @@ import io.vonley.mi.R
 import io.vonley.mi.databinding.ActivityMainXmlBinding
 
 @AndroidEntryPoint
-class MainActivityXml : AppCompatActivity(), NavController.OnDestinationChangedListener {
+class MainActivityXml : AppCompatActivity() {
 
     private lateinit var navHostFragment: NavHostFragment
     private val navController
         get() = navHostFragment.navController
-
 
     private lateinit var appBarConfiguration: AppBarConfiguration
 
     override fun onSupportNavigateUp(): Boolean {
         val navController = findNavController(R.id.fragment_container)
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
+    }
+
+    private fun onDestinationChanged(binding: ActivityMainXmlBinding): (NavController, NavDestination, Bundle?) -> Unit {
+        return { controller, destination, arguments ->
+            val i = when (destination.id) {
+                R.id.fragment_payload -> {
+                    binding.fab.setOnClickListener(null)
+                    binding.fab.setImageDrawable(
+                        ContextCompat.getDrawable(
+                            this@MainActivityXml,
+                            R.drawable.icon_svg_upload_two
+                        )
+                    )
+                    View.VISIBLE
+                }
+
+                R.id.fragment_ftp -> {
+                    binding.fab.setOnClickListener(null)
+                    binding.fab.setImageDrawable(
+                        ContextCompat.getDrawable(
+                            this@MainActivityXml,
+                            R.drawable.ic_svg_upload
+                        )
+                    )
+                    View.VISIBLE
+                }
+
+                R.id.fragment_console -> {
+                    binding.fab.setOnClickListener(null)
+                    binding.fab.setImageDrawable(
+                        ContextCompat.getDrawable(
+                            this@MainActivityXml,
+                            R.drawable.icon_svg_add
+                        )
+                    )
+                    View.VISIBLE
+                }
+
+                R.id.fragment_home -> {
+                    binding.fab.setOnClickListener(null)
+                    binding.fab.setImageDrawable(
+                        ContextCompat.getDrawable(
+                            this@MainActivityXml,
+                            R.drawable.icon_svg_info
+                        )
+                    )
+                    View.VISIBLE
+                }
+
+                else -> View.GONE
+            }
+            binding.fab.visibility = i
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,77 +95,17 @@ class MainActivityXml : AppCompatActivity(), NavController.OnDestinationChangedL
                 this.navHostFragment = supportFragmentManager.findFragmentById(R.id.fragment_container) as NavHostFragment
                 setSupportActionBar(binding.bottomAppBar)
                 NavigationUI.setupWithNavController(binding.bottomNavigation, navController)
-                navController.addOnDestinationChangedListener { controller, destination, arguments ->
-                    val i = when (destination.id) {
-                        R.id.fragment_payload -> {
-                            binding.fab.setOnClickListener(null)
-                            binding.fab.setImageDrawable(
-                                ContextCompat.getDrawable(
-                                    this@MainActivityXml,
-                                    R.drawable.icon_svg_upload_two
-                                )
-                            )
-                            View.VISIBLE
-                        }
-
-                        R.id.fragment_ftp -> {
-                            binding.fab.setOnClickListener(null)
-                            binding.fab.setImageDrawable(
-                                ContextCompat.getDrawable(
-                                    this@MainActivityXml,
-                                    R.drawable.ic_svg_upload
-                                )
-                            )
-                            View.VISIBLE
-                        }
-
-                        R.id.fragment_console -> {
-                            binding.fab.setOnClickListener(null)
-                            binding.fab.setImageDrawable(
-                                ContextCompat.getDrawable(
-                                    this@MainActivityXml,
-                                    R.drawable.icon_svg_add
-                                )
-                            )
-                            View.VISIBLE
-                        }
-
-                        R.id.fragment_home -> {
-                            binding.fab.setOnClickListener(null)
-                            binding.fab.setImageDrawable(
-                                ContextCompat.getDrawable(
-                                    this@MainActivityXml,
-                                    R.drawable.icon_svg_info
-                                )
-                            )
-                            View.VISIBLE
-                        }
-
-                        else -> View.GONE
-                    }
-                    binding.fab.visibility = i
-                }
+                navController.addOnDestinationChangedListener(onDestinationChanged(binding))
             }
         }
     }
 
-    override fun onDestinationChanged(
-        controller: NavController,
-        destination: NavDestination,
-        arguments: Bundle?
-    ) {
-
-    }
-
 }
-
 
 @Composable
 @Preview(showBackground = true)
 fun PreviewHomeFragmentView(binding: ((binding: ActivityMainXmlBinding) -> Unit)? = null) {
     AndroidViewBinding(ActivityMainXmlBinding::inflate) {
-        //this.fragmentContainer
-        //val myFragment = fragmentContainer.getFragment<HomeFragmentView>()
         binding?.invoke(this)
     }
 }
@@ -123,7 +115,6 @@ fun PreviewHomeFragmentView(binding: ((binding: ActivityMainXmlBinding) -> Unit)
 fun PreviewHomeFragmentView2() {
     AndroidView(factory = { ctx ->
         val inflate = LayoutInflater.from(ctx).inflate(R.layout.activity_main_xml, null)
-
         inflate
     }) {
 

@@ -1,4 +1,4 @@
-package io.vonley.mi.ui.screens.home
+package io.vonley.mi.ui.screens.home.presentation
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
@@ -19,14 +21,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.Fragment
+import androidx.hilt.navigation.compose.hiltViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import io.vonley.mi.Mi
-import io.vonley.mi.ui.screens.home.article.ArticleCard
-import io.vonley.mi.ui.screens.home.log.LogCardBase
+import io.vonley.mi.ui.screens.home.presentation.article.ArticleCard
+import io.vonley.mi.ui.screens.home.presentation.log.LogCard
+import io.vonley.mi.ui.screens.home.presentation.log.LogCardBase
 
 
 @AndroidEntryPoint
-class HomeFragmentView: Fragment() {
+class HomeFragmentView : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -42,24 +46,41 @@ class HomeFragmentView: Fragment() {
 
 @Composable
 fun HomeView() {
+    val vm = hiltViewModel<HomeViewModel>()
+    val logs = vm.state.collectAsState()
     Column() {
         ArticleList() {
-            LogList()
+            LogList(logs)
         }
     }
 }
 
 @Composable
-fun LogList() {
+fun LogList(state: State<HomeState>) {
     Text(
-        text="Logs",
-        color= Color.Black,
+        text = "Logs",
+        color = Color.Black,
         modifier = Modifier.padding(16.dp, 8.dp),
         fontWeight = FontWeight.Bold,
         fontStyle = FontStyle.Normal,
         fontSize = 20.sp
     )
-    LogCardBase(title = "Connect to http://192.168.11.248:8080", description = "", background = Mi.Color.QUATERNARY)
+    Column(modifier = Modifier.verticalScroll(state = ScrollState(0))) {
+        when (val curr = state.value) {
+            HomeState.Empty -> {
+                LogCardBase(
+                    title = "Connect to http://192.168.11.18:8080",
+                    description = "",
+                    background = Mi.Color.QUATERNARY
+                )
+            }
+            is HomeState.Log -> {
+                curr.logs.forEach {
+                    LogCard(log = it)
+                }
+            }
+        }
+    }
 }
 
 @Composable
