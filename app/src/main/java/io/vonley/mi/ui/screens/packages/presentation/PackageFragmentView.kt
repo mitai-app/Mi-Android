@@ -1,9 +1,14 @@
 package io.vonley.mi.ui.screens.packages.presentation
 
+import android.graphics.drawable.AnimatedVectorDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
+import androidx.compose.animation.graphics.res.animatedVectorResource
+import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
+import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,17 +23,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.vectordrawable.graphics.drawable.AnimatedVectorDrawableCompat
 import coil.compose.rememberAsyncImagePainter
 import dagger.hilt.android.AndroidEntryPoint
 import io.vonley.mi.Mi
@@ -283,7 +293,7 @@ fun ListRepoPackages(packages: Array<Package>, onPackageClick: (Package) -> Unit
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationGraphicsApi::class)
 @Composable
 fun RepoPackageItem(repoPackage: Package, onPackageClick: (Package) -> Unit) {
     Card(
@@ -297,11 +307,11 @@ fun RepoPackageItem(repoPackage: Package, onPackageClick: (Package) -> Unit) {
             onPackageClick(repoPackage)
         }
     ) {
+
+        val animated = ImageVector.vectorResource(io.vonley.mi.R.drawable.icon_svg_inbox)
         val painter = rememberAsyncImagePainter(
             model = repoPackage.icon,
-            placeholder = painterResource(
-                id = io.vonley.mi.R.mipmap.orb
-            )
+            placeholder = rememberVectorPainter(animated)
         )
         Row(
             verticalAlignment = Alignment.CenterVertically,

@@ -33,7 +33,6 @@ android {
         }
 
     }
-
     externalNativeBuild {
         ndkBuild {
             path = File("src/main/jni/Android.mk")
@@ -91,20 +90,17 @@ dependencies {
 
     // Accompanist
 
-    implementation("org.nanohttpd:nanohttpd:2.3.1")
-    implementation("commons-net:commons-net:3.6")
+    implementation(libs.nanohttpd)
+    implementation(libs.nanohttpd.webserver)
+    implementation(libs.commons.net)
+    implementation(libs.circleimageview)
+    implementation(libs.picasso)
+    implementation(libs.coil.compose)
+    implementation(libs.markwon.core)
+    implementation(libs.kotlinx.coroutines.android)
 
-    implementation("de.hdodenhof:circleimageview:3.1.0")
-    implementation("javax.inject:javax.inject:1")
-    implementation("net.danlew:android.joda:2.12.5")
-
-    implementation("org.nanohttpd:nanohttpd-webserver:2.3.1")
-    implementation("com.squareup.picasso:picasso:2.71828")
-
-    implementation("io.coil-kt:coil-compose:2.2.2")
-    implementation("io.noties.markwon:core:4.6.2")
-
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1")
+    implementation(libs.javax.inject)
+    implementation(libs.android.joda)
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.crashlytics.ktx)
@@ -113,7 +109,6 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraint)
-    implementation(libs.androidx.constraint.compose)
     implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.preference.ktx)
     implementation(libs.androidx.swiperefreshlayout)
@@ -123,6 +118,7 @@ dependencies {
     implementation(libs.accompanist.pager)
     implementation(libs.accompanist.pager.indicators)
     implementation(libs.accompanist.themeadapter)
+    implementation(libs.androidx.animation.graphics.android)
 
     ksp(libs.glide.ksp)
     implementation(libs.glide)
@@ -171,6 +167,7 @@ dependencies {
     implementation(libs.androidx.navigation.testing)
     implementation(libs.androidx.navigation.ui)
     implementation(libs.androidx.navigation.ui.ktx)
+    implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.androidx.navigation.fragment)
     implementation(libs.androidx.navigation.fragment.ktx)
     androidTestImplementation(libs.androidx.navigation.testing)

@@ -5,7 +5,13 @@ import android.view.LayoutInflater
 import android.view.View
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.viewinterop.AndroidViewBinding
@@ -91,8 +97,9 @@ class MainActivityXml : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            PreviewHomeFragmentView() { binding ->
-                this.navHostFragment = supportFragmentManager.findFragmentById(R.id.fragment_container) as NavHostFragment
+            PreviewHomeFragmentView { binding ->
+                this@MainActivityXml.navHostFragment =
+                    supportFragmentManager.findFragmentById(R.id.fragment_container) as NavHostFragment
                 setSupportActionBar(binding.bottomAppBar)
                 NavigationUI.setupWithNavController(binding.bottomNavigation, navController)
                 navController.addOnDestinationChangedListener(onDestinationChanged(binding))
@@ -105,7 +112,9 @@ class MainActivityXml : AppCompatActivity() {
 @Composable
 @Preview(showBackground = true)
 fun PreviewHomeFragmentView(binding: ((binding: ActivityMainXmlBinding) -> Unit)? = null) {
-    AndroidViewBinding(ActivityMainXmlBinding::inflate) {
+    AndroidViewBinding(factory = { inflator, parent, attachToParent ->
+        ActivityMainXmlBinding.inflate(inflator, parent, attachToParent)
+    }) {
         binding?.invoke(this)
     }
 }

@@ -6,9 +6,13 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
@@ -48,10 +52,8 @@ class HomeFragmentView : Fragment() {
 fun HomeView() {
     val vm = hiltViewModel<HomeViewModel>()
     val logs = vm.state.collectAsState()
-    Column() {
-        ArticleList() {
-            LogList(logs)
-        }
+    ArticleList {
+        LogList(logs)
     }
 }
 
@@ -65,28 +67,33 @@ fun LogList(state: State<HomeState>) {
         fontStyle = FontStyle.Normal,
         fontSize = 20.sp
     )
-    Column(modifier = Modifier.verticalScroll(state = ScrollState(0))) {
-        when (val curr = state.value) {
-            HomeState.Empty -> {
-                LogCardBase(
-                    title = "Connect to http://192.168.11.18:8080",
-                    description = "",
-                    background = Mi.Color.QUATERNARY
-                )
-            }
-            is HomeState.Log -> {
-                curr.logs.forEach {
+    when (val curr = state.value) {
+        HomeState.Empty -> {
+            LogCardBase(
+                title = "Connect to http://192.168.11.18:8080",
+                description = "",
+                background = Mi.Color.QUATERNARY
+            )
+        }
+
+        is HomeState.Log -> {
+            LazyColumn {
+                items(curr.logs) {
                     LogCard(log = it)
                 }
             }
         }
     }
+
 }
 
 @Composable
-inline fun ArticleList(content: @Composable () -> Unit) {
+inline fun ArticleList(crossinline content: @Composable () -> Unit) {
     Column(
-        modifier = Modifier.verticalScroll(state = ScrollState(0))
+        modifier = Modifier
+            .verticalScroll(ScrollState(0))
+            .fillMaxHeight()
+            .fillMaxWidth()
     ) {
         Mi.ARTICLES.forEach {
             ArticleCard(article = it)
