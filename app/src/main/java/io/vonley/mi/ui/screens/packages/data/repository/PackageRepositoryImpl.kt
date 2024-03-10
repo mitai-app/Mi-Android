@@ -1,7 +1,10 @@
 package io.vonley.mi.ui.screens.packages.data.repository
 
 import io.vonley.mi.common.Resource
+import io.vonley.mi.models.Payload
 import io.vonley.mi.ui.screens.packages.data.local.PackageRepositoryDao
+import io.vonley.mi.ui.screens.packages.data.local.entity.Package
+import io.vonley.mi.ui.screens.packages.data.local.entity.PackageType
 import io.vonley.mi.ui.screens.packages.domain.remote.RepoService
 import io.vonley.mi.ui.screens.packages.data.local.entity.Repo
 import io.vonley.mi.ui.screens.packages.domain.repository.PackageRepository
@@ -10,7 +13,7 @@ import javax.inject.Inject
 
 class PackageRepositoryImpl @Inject constructor(
     private val dao: PackageRepositoryDao,
-    private val repo: RepoService
+    private val repo: RepoService,
 ) : PackageRepository {
 
     private suspend fun fetch(link: String, save: Boolean = true): Repo? {
@@ -76,6 +79,18 @@ class PackageRepositoryImpl @Inject constructor(
 
     override suspend fun getDefaultRepo(): Boolean {
         return fetch("https://raw.githubusercontent.com/mitai-app/versioning/main/packages.json") != null
+    }
+
+    override suspend fun fromPackage(pkg: Package, key: String): Payload? {
+        val url = pkg.dl[key] ?: return null
+        val body = repo.downloadFile(url).body() ?: return null
+
+        val name = pkg.name + when (pkg.type) {
+            PackageType.PLUGIN -> ".bin"
+            PackageType.APP -> ".pkg"
+            else -> ""
+        }
+        return Payload(name, body.byteStream())
     }
 
     override suspend fun exists(link: String): Boolean {

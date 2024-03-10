@@ -7,11 +7,14 @@ import android.view.ViewGroup
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -55,7 +58,7 @@ class ConsoleFragmentView: Fragment() {
 @Composable
 fun ConsolesView() {
     val vm = hiltViewModel<ConsoleViewModel>()
-    val consoleState by remember { vm.consoles }
+    val consoleState by vm.consoles.collectAsState()
     ConsoleViewState(
         state = consoleState,
         onConsoleClick = { console: Console ->
@@ -77,19 +80,21 @@ fun ConsoleViewState(
     onConsoleClick: (Console) -> Unit,
     onConsolePin: (Console, Boolean) -> Unit
 ) {
-    Column() {
+    Column {
         when (state) {
             is ConsoleState.Error -> {
 
             }
 
             is ConsoleState.Success -> {
-                state.repos.forEach {
-                    ConsoleView(
-                        console = it,
-                        onConsoleClick = onConsoleClick,
-                        onConsolePin = onConsolePin
-                    )
+                LazyColumn {
+                    items(state.repos) {
+                        ConsoleView(
+                            console = it,
+                            onConsoleClick = onConsoleClick,
+                            onConsolePin = onConsolePin
+                        )
+                    }
                 }
             }
 
@@ -101,10 +106,9 @@ fun ConsoleViewState(
 }
 
 
-@Preview
+@Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun PreviewConsoleView() {
-    //ConsolesView()
     val consoles = arrayOf(
         Console(
             ip = "192.168.1.184",
@@ -190,7 +194,6 @@ fun ConsoleView(
                 contentScale = ContentScale.Crop, colorFilter = ColorFilter.tint(Color.White),
                 contentDescription = null // decorative element
             )
-
 
             Column(
                 modifier = Modifier

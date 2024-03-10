@@ -214,6 +214,7 @@ fun LoadingRepo() {
 
 @Composable
 fun RepoListView(repos: List<Repo>) {
+    val vm = hiltViewModel<PackageViewModel>()
     repos.forEach {
         val expanded = remember { mutableStateOf(false) }
         RepoCard(repo = it) {
@@ -221,7 +222,7 @@ fun RepoListView(repos: List<Repo>) {
         }
         if (expanded.value) {
             ListRepoPackages(it.packages) { pkg ->
-
+                vm.send(pkg)
             }
         }
     }

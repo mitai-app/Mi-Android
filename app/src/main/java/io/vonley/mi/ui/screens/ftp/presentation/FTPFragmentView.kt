@@ -215,7 +215,7 @@ private fun FileView(file: FTPFile, onFileClick: (FTPFile) -> Unit) {
     }
 }
 
-@Preview
+@Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun PreviewFtpStateView() {
 

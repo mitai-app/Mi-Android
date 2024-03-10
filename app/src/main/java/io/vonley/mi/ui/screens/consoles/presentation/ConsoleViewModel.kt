@@ -27,9 +27,9 @@ class ConsoleViewModel @Inject constructor(
     @SharedPreferenceStorage val manager: SharedPreferenceManager
 ) : ViewModel() {
 
-    private var _consoles: MutableState<ConsoleState> = mutableStateOf(ConsoleState.Loading)
+    private var _consoles: MutableStateFlow<ConsoleState> = MutableStateFlow(ConsoleState.Loading)
 
-    val consoles: State<ConsoleState> get() = _consoles
+    val consoles: StateFlow<ConsoleState> get() = _consoles
 
     init {
         getConsoles()
@@ -39,16 +39,21 @@ class ConsoleViewModel @Inject constructor(
         consoleUseCase()
             .flowOn(Dispatchers.IO)
             .onEach { consoles ->
-                _consoles.value = ConsoleState.Success(consoles)
+                _consoles.update {
+                    ConsoleState.Success(consoles)
+                }
             }.onCompletion { error ->
                 if (error != null) {
                     "Error ${error.message}".e("ERROR", error)
-                    _consoles.value =
+                    _consoles.update {
                         ConsoleState.Error("Unable to fetch consoles: ${error.message}")
+                    }
                 }
             }.catch { error ->
                 "Error ${error.message}".e("ERROR", error)
-                _consoles.value = ConsoleState.Error("Unable to fetch consoles: ${error.message}")
+                _consoles.update {
+                    ConsoleState.Error("Unable to fetch consoles: ${error.message}")
+                }
             }.launchIn(viewModelScope)
     }
 

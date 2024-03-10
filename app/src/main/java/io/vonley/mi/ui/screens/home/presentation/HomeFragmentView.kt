@@ -103,7 +103,7 @@ inline fun ArticleList(crossinline content: @Composable () -> Unit) {
 }
 
 
-@Preview
+@Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun PreviewHomeView() {
     HomeView()
