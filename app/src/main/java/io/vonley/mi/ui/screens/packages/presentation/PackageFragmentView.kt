@@ -1,29 +1,36 @@
 package io.vonley.mi.ui.screens.packages.presentation
 
-import android.graphics.drawable.AnimatedVectorDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
-import androidx.compose.animation.graphics.res.animatedVectorResource
-import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
-import androidx.compose.animation.graphics.vector.AnimatedImageVector
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.MaterialTheme.typography
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,19 +45,18 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.vectordrawable.graphics.drawable.AnimatedVectorDrawableCompat
 import coil.compose.rememberAsyncImagePainter
 import dagger.hilt.android.AndroidEntryPoint
 import io.vonley.mi.Mi
+import io.vonley.mi.common.templates.textfield.CustomTextField
 import io.vonley.mi.extensions.isLink
 import io.vonley.mi.ui.screens.packages.data.local.entity.Package
 import io.vonley.mi.ui.screens.packages.data.local.entity.PackageType
 import io.vonley.mi.ui.screens.packages.data.local.entity.Repo
-import io.vonley.mi.common.templates.textfield.CustomTextField
 
 
 @AndroidEntryPoint
-class PackageFragmentView: Fragment() {
+class PackageFragmentView : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -109,6 +115,7 @@ fun RepoViewState(
                 is PackageState.Loading -> {
                     LoadingRepo()
                 }
+
                 is PackageState.Success -> {
                     if (state.repos.isNotEmpty()) {
                         RepoListView(state.repos)
@@ -116,6 +123,7 @@ fun RepoViewState(
                         EmptyRepo()
                     }
                 }
+
                 is PackageState.Error -> {
                     ErrorRepo(state.error)
                 }
@@ -206,26 +214,20 @@ fun LoadingRepo() {
 
 @Composable
 fun RepoListView(repos: List<Repo>) {
-    LazyColumn(
-    ) {
-        items(
-            items = repos,
-            itemContent = {
-                val expanded = remember { mutableStateOf(false) }
-                RepoCard(repo = it) {
-                    expanded.value = !expanded.value
-                }
-                if (expanded.value) {
-                    ListRepoPackages(it.packages) { pkg ->
+    repos.forEach {
+        val expanded = remember { mutableStateOf(false) }
+        RepoCard(repo = it) {
+            expanded.value = !expanded.value
+        }
+        if (expanded.value) {
+            ListRepoPackages(it.packages) { pkg ->
 
-                    }
-                }
             }
-        )
+        }
     }
+
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RepoCard(repo: Repo, onClick: () -> Unit) {
     Card(
@@ -288,12 +290,17 @@ fun RepoCard(repo: Repo, onClick: () -> Unit) {
 
 @Composable
 fun ListRepoPackages(packages: Array<Package>, onPackageClick: (Package) -> Unit) {
-    packages.forEach {
-        RepoPackageItem(repoPackage = it, onPackageClick)
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxHeight()
+            .fillMaxWidth()
+    ) {
+        items(packages) {
+            RepoPackageItem(repoPackage = it, onPackageClick)
+        }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationGraphicsApi::class)
 @Composable
 fun RepoPackageItem(repoPackage: Package, onPackageClick: (Package) -> Unit) {
     Card(
