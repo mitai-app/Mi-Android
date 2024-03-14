@@ -1,7 +1,6 @@
 package io.vonley.mi.di.network.protocols.ccapi
 
 import androidx.lifecycle.LiveData
-import io.vonley.mi.di.network.impl.get
 import io.vonley.mi.di.network.protocols.common.PSXNotifier
 import io.vonley.mi.di.network.protocols.common.PSXProtocol
 import io.vonley.mi.di.network.protocols.common.cmds.Boot
@@ -9,8 +8,8 @@ import io.vonley.mi.di.network.protocols.common.cmds.Buzzer
 import io.vonley.mi.di.network.protocols.common.cmds.LedColor
 import io.vonley.mi.di.network.protocols.common.cmds.LedStatus
 import io.vonley.mi.di.network.protocols.common.models.*
-import io.vonley.mi.di.network.protocols.ps3mapi.PS3MAPI
 import io.vonley.mi.models.enums.Feature
+import io.vonley.mi.ui.screens.consoles.data.remote.get
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader

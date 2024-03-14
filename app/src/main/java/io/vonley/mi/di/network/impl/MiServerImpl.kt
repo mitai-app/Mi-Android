@@ -1,19 +1,24 @@
 package io.vonley.mi.di.network.impl
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
 import android.webkit.MimeTypeMap
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import fi.iki.elonen.NanoHTTPD
 import io.vonley.mi.BuildConfig
+import io.vonley.mi.Mi
+import io.vonley.mi.Mi.MiEvent.*
 import io.vonley.mi.R
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
 import io.vonley.mi.di.network.MiServer
@@ -47,7 +52,7 @@ class MiServerImpl constructor(
         fun onJailbreakFailed(message: String)
         fun onPayloadSent(msg: String? = null)
         fun onUnsupported(s: String)
-        fun onCommand(mi: Mi<Mi.Cmd>)
+        fun onCommand(mi: MiResponse<MiResponse.Cmd>)
         fun onSendPayloadAttempt(attempt: Int)
         fun onSendPkgSuccess(payload: Payload) {
 
@@ -174,7 +179,7 @@ class MiServerImpl constructor(
             }
         }
 
-        override fun onCommand(mi: Mi<Mi.Cmd>) {
+        override fun onCommand(mi: MiResponse<MiResponse.Cmd>) {
             val name = "onCommand"
             launch {
                 withContext(Dispatchers.Main) {
@@ -216,6 +221,7 @@ class MiServerImpl constructor(
             Pair("9.00", context.assets.open("payloads/goldhen/900.bin").readBytes())
         )
     }
+
     private val root: String get() = console!!.jbPath
     private var ready: Boolean = false
     private var console: Device? = null
@@ -242,12 +248,8 @@ class MiServerImpl constructor(
             context,
             System.currentTimeMillis().toInt(),
             intent,
-            PendingIntent.FLAG_UPDATE_CURRENT
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-
-        val texts = "Visit http://${service.localDeviceIp}:${activePort} on your ps4!"
-        val titles = "ミ (Mi)"
-        val summaries = "Jailbreak server is running in the background"
 
         val style = NotificationCompat.BigTextStyle()
             .bigText(content)
@@ -281,6 +283,20 @@ class MiServerImpl constructor(
                         super.start()
                         delay(3000)
                         withContext(Dispatchers.Main) {
+                            if (ActivityCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.POST_NOTIFICATIONS
+                                ) != PackageManager.PERMISSION_GRANTED
+                            ) {
+                                // TODO: Consider calling
+                                //    ActivityCompat#requestPermissions
+                                // here to request the missing permissions, and then overriding
+                                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                                //                                          int[] grantResults)
+                                // to handle the case where the user grants the permission. See the documentation
+                                // for ActivityCompat#requestPermissions for more details.
+                                return@withContext
+                            }
                             NotificationManagerCompat.from(context).notify(0, create())
                         }
                     } catch (e: Throwable) {
@@ -324,10 +340,10 @@ class MiServerImpl constructor(
                     fun installPayload(): Response {
                         val bytes = payloads[uri]!!
                         "PAYLOAD DOES CONTAIN URI: $uri, size: ${bytes.size}".e("BOO YEAH")
-                        return newFixedLengthResponse(
+                        return newChunkedResponse(
                             Response.Status.OK,
-                            "application/x-newton-compatible-pkg",
-                            ByteArrayInputStream(bytes), bytes.size.toLong()
+                            "application/octet-stream",
+                            ByteArrayInputStream(bytes)
                         )
                     }
                     console?.let {
@@ -341,10 +357,13 @@ class MiServerImpl constructor(
                                 if (this@MiServerImpl.console?.ip != it.ip) this@MiServerImpl.console = it
                                 when (uri) {
                                     "/" -> {
+                                        val read = read("index.html")
+                                            .replace("{{BODY}}", "Mi")
+                                            .replace("{{TITLE}}", "Mi JB Host")
                                         return newFixedLengthResponse(
                                             Response.Status.OK,
                                             "text/html",
-                                            read("index.html")
+                                            read
                                         )
                                     }
                                     "/mi.js" -> {
@@ -372,7 +391,7 @@ class MiServerImpl constructor(
                                             )
                                         }
                                         "DATA: $body".e(TAG)
-                                        val mi: Mi<Mi.Cmd> = body.fromJson() ?: run {
+                                        val mi: MiResponse<MiResponse.Cmd> = body.fromJson() ?: run {
                                             "COULD NOT PARSE".e(TAG)
                                             return newFixedLengthResponse(
                                                 Response.Status.INTERNAL_ERROR,
@@ -384,17 +403,73 @@ class MiServerImpl constructor(
                                         val cmd = mi.data.cmd
                                         val message = mi.response
                                         when (cmd) {
-                                            "jb.success" -> {
+                                            MIEnumCMD.INITIATED -> {
+                                                callback.onLog("[JB:Initiated] $message")
+                                                val params = arrayOf(
+                                                    Pair("console_device", it.device),
+                                                    Pair("console_version", it.version),
+                                                    Pair("console_supported",it.supported),
+                                                    Pair("from", MiServer::class.java.name)
+                                                )
+                                                Mi.log(JB_INITIATED, *params)}
+                                            MIEnumCMD.CONTINUE -> {
+                                                callback.onLog("[JB:Continue] $message")
+                                                val params = arrayOf(
+                                                    Pair("console_device", it.device),
+                                                    Pair("console_version", it.version),
+                                                    Pair("console_supported",it.supported),
+                                                    Pair("from", MiServer::class.java.name)
+                                                )
+                                                Mi.log(JB_CONTINUE, *params)}
+                                            MIEnumCMD.PAYLOAD_REQUEST -> {
+                                                callback.onLog("[JB:Payload:Request] $message")
+                                                val params = arrayOf(
+                                                    Pair("console_device", it.device),
+                                                    Pair("console_version", it.version),
+                                                    Pair("console_supported",it.supported),
+                                                    Pair("from", MiServer::class.java.name)
+                                                )
+                                                Mi.log(JB_PAYLOAD_REQUEST, *params)
+                                            }
+                                            MIEnumCMD.STARTED -> {
+                                                callback.onLog("[JB:Started] $message")
+                                                val params = arrayOf(
+                                                    Pair("console_device", it.device),
+                                                    Pair("console_version", it.version),
+                                                    Pair("console_supported",it.supported),
+                                                    Pair("from", MiServer::class.java.name)
+                                                )
+                                                Mi.log(JB_STARTED, *params)
+                                            }
+                                            MIEnumCMD.SUCCESS -> {
                                                 callback.onLog("[Status] Enjoy!")
                                                 callback.onJailbreakSucceeded(message)
+                                                val params = arrayOf(
+                                                    Pair("console_device", it.device),
+                                                    Pair("console_version", it.version),
+                                                    Pair("console_supported",it.supported),
+                                                    Pair("from", MiServer::class.java.name)
+                                                )
+                                                Mi.log(JB_SUCCESS, *params)
                                             }
-                                            "jb.failed" -> {
+                                            MIEnumCMD.FAILED -> {
                                                 callback.onLog("[JB:Failed] Somethings not right...")
                                                 callback.onJailbreakFailed(message)
+                                                val params = arrayOf(
+                                                    Pair("console_device", it.device),
+                                                    Pair("console_version", it.version),
+                                                    Pair("console_supported",it.supported),
+                                                    Pair("from", MiServer::class.java.name)
+                                                )
+                                                Mi.log(JB_FAILURE, *params)
                                             }
-                                            "send.payload" -> {
-                                                callback.onLog("[Payload] Initializing Payload sender (PS4 about to get blessed.)")
-                                                sendPayload(it)
+                                            MIEnumCMD.PAYLOAD -> {
+                                                callback.onLog("[Send:Payload] Initializing Payload sender (PS4 about to get blessed.)")
+                                                sendPayload(it, if(console.version == "9.00") 9090 else 9021)
+                                            }
+                                            MIEnumCMD.PENDING -> {
+                                                callback.onLog("[Send:Pending] Initializing Payload sender (PS4 about to get blessed.)")
+                                                sendPayload(it, if(console.version == "9.00") 9020 else 9021)
                                             }
                                             else -> return newFixedLengthResponse(
                                                 Response.Status.NOT_FOUND,
@@ -408,23 +483,40 @@ class MiServerImpl constructor(
                                             "received"
                                         )
                                     }
+                                    "/gh.bin" -> {
+                                        val path = uri.drop(1)
+                                        val readBytes = readBytes(path)
+                                        val byteArrayInputStream = ByteArrayInputStream(readBytes)
+                                        return newFixedLengthResponse(
+                                            Response.Status.OK,
+                                            "*/*",
+                                            byteArrayInputStream,
+                                            readBytes.size.toLong()
+                                        )
+                                    }
                                     else -> {
                                         val path = uri.drop(1)
                                         if (uri.contains(".manifest")) {
                                             if (!manager.cached) {
                                                 return newFixedLengthResponse(
                                                     Response.Status.OK,
-                                                    "/*",
+                                                    "*/*",
                                                     ""
                                                 )
                                             }
                                         }
                                         Log.e(TAG, "URI: $uri")
 
+                                        var read = read(path)
+                                        if (path.contains("index.html")) {
+                                            read = read
+                                                .replace("{{BODY}}", "Mi")
+                                                .replace("{{TITLE}}", "Mi JB Host")
+                                        }
                                         return newFixedLengthResponse(
                                             Response.Status.OK,
                                             mime,
-                                            read(path)
+                                            read
                                         )
                                     }
                                 }
@@ -441,6 +533,7 @@ class MiServerImpl constructor(
                             }
                         }
                     } ?: run {
+
                         if (payloads.containsKey(uri)) {
                             return installPayload()
                         }
@@ -505,7 +598,8 @@ class MiServerImpl constructor(
     override fun hostPackage(vararg payloads: Payload): Array<String> {
         val urls = payloads.map { payload ->
             val path = "/pkg/${payload.name}"
-            this.payloads[path] = payload.data
+            //this.payloads[path] = payload
+            //TODO: Fix
             "http://${service.localDeviceIp}:${manager.jbPort}$path"
         }
         return urls.toTypedArray()
@@ -586,7 +680,7 @@ class MiServerImpl constructor(
         return type;
     }
 
-    private fun sendPayload(device: Device) {
+    private fun sendPayload(device: Device, port: Int = 9021) {
         payloads[device.version]?.let { payload ->
             Log.e(TAG, "Payload Size: ${payload.size}")
             if (payload.isEmpty()) return@let
@@ -612,6 +706,13 @@ class MiServerImpl constructor(
                         outputStream.close()
                         callback.onPayloadSent(string)
                         outSock.close()
+                        val params = arrayOf(
+                            Pair("console_device", device.device),
+                            Pair("console_version", device.version),
+                            Pair("console_supported",device.supported),
+                            Pair("from", MiServer::class.java.name)
+                        )
+                        Mi.log(JB_PAYLOAD, *params)
                         break
                     } catch (ex: Exception) {
                         attempts++

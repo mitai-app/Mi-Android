@@ -11,25 +11,27 @@ import dagger.hilt.components.SingletonComponent
 import io.vonley.mi.di.annotations.*
 import io.vonley.mi.di.network.MiServer
 import io.vonley.mi.di.network.PSXService
-import io.vonley.mi.di.network.SyncService
 import io.vonley.mi.di.network.auth.OAuth2Authenticator
-import io.vonley.mi.di.network.impl.MiFTPClientImpl
-import io.vonley.mi.di.network.impl.MiServerImpl
-import io.vonley.mi.di.network.impl.PSXServiceImpl
-import io.vonley.mi.di.network.impl.SyncServiceImpl
+import io.vonley.mi.di.network.impl.*
 import io.vonley.mi.di.network.protocols.ccapi.CCAPIImpl
-import io.vonley.mi.di.network.protocols.goldenhen.Goldhen
 import io.vonley.mi.di.network.protocols.goldenhen.GoldhenImpl
 import io.vonley.mi.di.network.protocols.klog.KLogImpl
 import io.vonley.mi.di.network.protocols.ps3mapi.PS3MAPIImpl
 import io.vonley.mi.di.network.protocols.webman.WebManImpl
-import io.vonley.mi.persistence.AppDatabase
+import io.vonley.mi.di.persistence.AppDatabase
+import io.vonley.mi.ui.screens.packages.domain.remote.RepoService
+import io.vonley.mi.ui.screens.consoles.domain.remote.SyncService
+import io.vonley.mi.ui.screens.consoles.data.remote.SyncServiceImpl
+import io.vonley.mi.ui.screens.ftp.data.remote.MiFTPClientImpl
+import io.vonley.mi.ui.screens.packages.data.remote.RemotePackageInstallerImpl
+import io.vonley.mi.ui.screens.packages.domain.remote.RemotePackageInstaller
 import io.vonley.mi.utils.SharedPreferenceManager
 import okhttp3.Cache
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.create
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
@@ -76,9 +78,19 @@ object NetworkModule {
     @Singleton
     fun provideGoldhenService(
         service: PSXService,
-        server: MiServer
+        server: MiServer,
+        rpi: RemotePackageInstaller
     ): GoldhenImpl {
-        return GoldhenImpl(service, server)
+        return GoldhenImpl(service, rpi, server)
+    }
+
+
+    @Provides
+    @Singleton
+    fun provideRPIServer(
+        service: SyncService
+    ): RemotePackageInstallerImpl {
+        return RemotePackageInstallerImpl(service)
     }
 
 
@@ -92,6 +104,7 @@ object NetworkModule {
     ): SyncServiceImpl {
         return SyncServiceImpl(context, database, manager, client)
     }
+
 
     @Provides
     @Singleton
@@ -151,7 +164,7 @@ object NetworkModule {
     ): OkHttpClient {
         val builder = OkHttpClient.Builder()
             .connectTimeout(2, TimeUnit.SECONDS)
-            .readTimeout(2, TimeUnit.SECONDS)
+            .readTimeout(10, TimeUnit.SECONDS)
             .writeTimeout(2, TimeUnit.SECONDS)
             .cache(Cache(Environment.getDownloadCacheDirectory(), (20 * 1024 * 1024).toLong()))
         if (LOG) {
@@ -205,5 +218,35 @@ object NetworkModule {
             .build()
     }
 
+
+    @Provides
+    fun provideRepoService(@GuestRetrofitClient retrofit: Retrofit): RepoService {
+        val builder = OkHttpClient.Builder()
+            .connectTimeout(2, TimeUnit.SECONDS)
+            .readTimeout(10, TimeUnit.SECONDS)
+            .writeTimeout(2, TimeUnit.SECONDS)
+            .cache(Cache(Environment.getDownloadCacheDirectory(), (20 * 1024 * 1024).toLong())).apply {
+                if (LOG) {
+                    addInterceptor(HttpLoggingInterceptor().also {
+                        it.level = HttpLoggingInterceptor.Level.HEADERS
+                    }).addInterceptor(HttpLoggingInterceptor().also {
+                        it.level = HttpLoggingInterceptor.Level.BODY
+                    })
+                }
+            }.build()
+
+        return Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(
+                GsonConverterFactory.create(
+                    GsonBuilder()
+                        .setLenient()
+                        .setDateFormat("yyyy-MM-dd HH:mm:ss")
+                        .create()
+                )
+            )
+            .client(builder)
+            .build().create()
+    }
 
 }

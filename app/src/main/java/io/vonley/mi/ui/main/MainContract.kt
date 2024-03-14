@@ -1,8 +1,8 @@
 package io.vonley.mi.ui.main
 
-import io.vonley.mi.base.BaseContract
+import io.vonley.mi.common.base.BaseContract
 import io.vonley.mi.di.network.protocols.klog.KLog
-import io.vonley.mi.models.Console
+import io.vonley.mi.ui.screens.consoles.domain.model.Console
 import io.vonley.mi.models.enums.PlatformType
 
 interface MainContract {

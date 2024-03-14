@@ -1,6 +1,6 @@
 package io.vonley.mi.ui.main.home
 
-import io.vonley.mi.base.BaseContract
+import io.vonley.mi.common.base.BaseContract
 import io.vonley.mi.di.network.impl.MiServerImpl
 import io.vonley.mi.utils.SharedPreferenceManager
 

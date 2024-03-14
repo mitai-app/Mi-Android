@@ -11,18 +11,18 @@ import dagger.hilt.components.SingletonComponent
 import io.vonley.mi.di.annotations.*
 import io.vonley.mi.di.network.MiServer
 import io.vonley.mi.di.network.PSXService
-import io.vonley.mi.di.network.SyncService
+import io.vonley.mi.ui.main.console.data.remote.SyncService
 import io.vonley.mi.di.network.auth.OAuth2Authenticator
 import io.vonley.mi.di.network.impl.MiFTPClientImpl
 import io.vonley.mi.di.network.impl.MiServerImpl
 import io.vonley.mi.di.network.impl.PSXServiceImpl
-import io.vonley.mi.di.network.impl.SyncServiceImpl
 import io.vonley.mi.di.network.protocols.ccapi.CCAPIImpl
 import io.vonley.mi.di.network.protocols.goldenhen.GoldhenImpl
 import io.vonley.mi.di.network.protocols.klog.KLogImpl
 import io.vonley.mi.di.network.protocols.ps3mapi.PS3MAPIImpl
 import io.vonley.mi.di.network.protocols.webman.WebManImplTest
 import io.vonley.mi.persistence.AppDatabase
+import io.vonley.mi.ui.main.console.data.remote.SyncServiceImpl
 import io.vonley.mi.utils.SharedPreferenceManager
 import okhttp3.Cache
 import okhttp3.OkHttpClient
@@ -73,15 +73,24 @@ object NetworkModule {
         return PS3MAPIImpl(service)
     }
 
+
     @Provides
     @Singleton
     fun provideGoldhenService(
         service: PSXService,
-        server: MiServer
+        server: MiServer,
+        rpi: RPI
     ): GoldhenImpl {
-        return GoldhenImpl(service, server)
+        return GoldhenImpl(service, rpi, server)
     }
 
+    @Provides
+    @Singleton
+    fun provideRPIServer(
+        service: SyncService
+    ): RemotePackageInstaller {
+        return RemotePackageInstaller(service)
+    }
 
     @Provides
     @Singleton

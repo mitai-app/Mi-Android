@@ -25,9 +25,10 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.vonley.mi.BuildConfig
 import io.vonley.mi.R
 import io.vonley.mi.databinding.FragmentFTPBinding
+import io.vonley.mi.models.enums.Event
+import io.vonley.mi.models.enums.Event.*
 import io.vonley.mi.ui.dialogs.MiInputDialog
 import io.vonley.mi.ui.main.MainContract
-import io.vonley.mi.ui.main.ftp.FTPPresenter.Event.*
 import io.vonley.mi.ui.main.ftp.adapters.FTPChildAttachChangeListener
 import io.vonley.mi.ui.main.ftp.adapters.FTPFileTouchListener
 import io.vonley.mi.ui.main.ftp.adapters.FTPRecyclerAdapter
@@ -134,10 +135,10 @@ class FTPFragment : Fragment(), FTPContract.View, ActivityResultCallback<Activit
                         .show(childFragmentManager, TAG)
                 }
                 R.id.ftp_delete -> {
-                    dialog("Are you sure you want to delete ${ftpFile.name}", "OK") { d, i ->
+                    dialog("Are you sure you want to delete ${ftpFile.name}", "OK") { d, _ ->
                         presenter.delete(ftpFile)
                         d.dismiss()
-                    }.setNegativeButton("Cancel") { d, i ->
+                    }.setNegativeButton("Cancel") { d, _ ->
                         d.dismiss()
                     }.create().show()
                     true
@@ -162,7 +163,7 @@ class FTPFragment : Fragment(), FTPContract.View, ActivityResultCallback<Activit
         // Snackbar.make(requireView(), "There's no target set...", Snackbar.LENGTH_LONG).show()
     }
 
-    override fun onFTPEventCompleted(upload: FTPPresenter.Event) {
+    override fun onFTPEventCompleted(upload: Event) {
         val message = when (upload) {
             UPLOAD -> "${upload.filename} upload successful!"
             DELETE -> "${upload.filename} deleted!"
@@ -184,7 +185,7 @@ class FTPFragment : Fragment(), FTPContract.View, ActivityResultCallback<Activit
         Snackbar.make(requireView(), message, Snackbar.LENGTH_LONG).show()
     }
 
-    override fun onFTPEventFailed(upload: FTPPresenter.Event) {
+    override fun onFTPEventFailed(upload: Event) {
         val message = when (upload) {
             UPLOAD -> "Failed to upload ${upload.filename}"
             DELETE -> "Failed to delete ${upload.filename}"
@@ -219,7 +220,7 @@ class FTPFragment : Fragment(), FTPContract.View, ActivityResultCallback<Activit
     }
 
 
-    private fun save(event: FTPPresenter.Event): Boolean {
+    private fun save(event: Event): Boolean {
         try {
             val bytes = event.data as ByteArray
             val storedFile = File(

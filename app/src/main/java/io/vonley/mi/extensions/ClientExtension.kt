@@ -4,11 +4,11 @@ import android.net.wifi.WifiInfo
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
-import io.vonley.mi.di.network.SyncService
-import io.vonley.mi.models.Client
-import io.vonley.mi.models.Console
+import io.vonley.mi.ui.screens.consoles.domain.remote.SyncService
+import io.vonley.mi.ui.screens.consoles.domain.model.Console
 import io.vonley.mi.models.enums.Feature
 import io.vonley.mi.models.enums.PlatformType
+import io.vonley.mi.ui.screens.consoles.domain.model.Client
 import java.net.InetAddress
 import java.net.Socket
 

@@ -6,7 +6,8 @@ import android.os.IBinder
 import com.google.gson.GsonBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import io.vonley.mi.BuildConfig
-import io.vonley.mi.base.BaseClient
+import io.vonley.mi.Mi
+import io.vonley.mi.common.base.BaseClient
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
 import io.vonley.mi.utils.Semver
 import io.vonley.mi.utils.SharedPreferenceManager
@@ -23,7 +24,7 @@ import kotlin.coroutines.CoroutineContext
 @AndroidEntryPoint
 class PSXService : Service(), BaseClient {
 
-    override val TAG = PSXService::class.java.name
+    override val TAG: String = PSXService::class.simpleName?:"PSXService"
 
     @Inject
     lateinit var binder: PSXServiceBinder
@@ -58,22 +59,22 @@ class PSXService : Service(), BaseClient {
                     continue
                 }
                 getRequest(
-                    "https://raw.githubusercontent.com/Mr-Smithy-x/Mi/main/meta.json",
+                    "https://raw.githubusercontent.com/mitai-app/versioning/main/android.json",
                     object : Callback {
                         override fun onFailure(call: Call, e: IOException) {
 
                         }
 
                         override fun onResponse(call: Call, response: Response) {
-                            response.body?.let { body ->
+                            response.body.let { body ->
                                 val json = JSONObject(body.string())
                                 val version = json.getString("version")
                                 val ver = version.ver
                                 val buildVer = BuildConfig.VERSION_NAME.ver
-                                val compare = ver > buildVer;
+                                val compare = ver > buildVer
                                 if (compare) {
                                     val build = if(json.has("build")){
-                                         json.getString("build")
+                                        json.getString("build")
                                     } else ""
                                     val change = if(json.has("changes")) {
                                         val changesList = json.getJSONArray("changes")
@@ -85,9 +86,6 @@ class PSXService : Service(), BaseClient {
                                     }else ""
                                     this@PSXService.meta = Meta(version, change, build)
                                 }
-
-                            } ?: run {
-
                             }
                         }
 
@@ -113,8 +111,9 @@ class PSXService : Service(), BaseClient {
 
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val onStartCommand = super.onStartCommand(intent, flags, startId)
+        super.onStartCommand(intent, flags, startId)
         if (manager.jbService) {
+            Mi.log(Mi.MiEvent.MI_SERVICE_START, Pair("Service", PSXService::class.java.name))
             binder.jb.startService()
         }
         binder.sync.getClients(true)
@@ -129,6 +128,7 @@ class PSXService : Service(), BaseClient {
     override fun onDestroy() {
         binder.sync.stop()
         binder.jb.stopService()
+        Mi.log(Mi.MiEvent.MI_SERVICE_END, Pair("Service", PSXService::class.java.name))
         update?.cancel()
         check = false
         super.onDestroy()

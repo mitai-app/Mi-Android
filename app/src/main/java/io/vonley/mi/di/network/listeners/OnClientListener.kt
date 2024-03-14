@@ -1,7 +1,7 @@
 package io.vonley.mi.di.network.listeners
 
 import android.util.Log
-import io.vonley.mi.models.Client
+import io.vonley.mi.ui.screens.consoles.domain.model.Client
 
 interface OnClientListener {
 
