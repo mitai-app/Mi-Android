@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompileTool
+
 plugins {
     id("kotlin-android")
     alias(libs.plugins.gms.google.services)
@@ -58,7 +60,6 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
-            setFlavorDimensions(flavorDimensions)
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -84,6 +85,17 @@ android {
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.10"
+    }
+
+    androidComponents {
+        onVariants(selector().all()) { variant ->
+            afterEvaluate {
+                val capName = variant.name.capitalize()
+                tasks.getByName("ksp${capName}Kotlin") {
+                    (this as AbstractKotlinCompileTool<*>).setSource(tasks.getByName("compile${capName}Aidl").outputs)
+                }
+            }
+        }
     }
 }
 
