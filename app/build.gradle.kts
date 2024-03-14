@@ -87,6 +87,7 @@ android {
         kotlinCompilerExtensionVersion = "1.5.10"
     }
 
+    /*
     androidComponents {
         onVariants(selector().all()) { variant ->
             afterEvaluate {
@@ -96,7 +97,7 @@ android {
                 }
             }
         }
-    }
+    }*/
 }
 
 dependencies {
