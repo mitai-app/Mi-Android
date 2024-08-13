@@ -1,15 +1,24 @@
-import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompileTool
+fun getInt(provider: Provider<String>): Int {
+    return getString(provider).toInt()
+}
 
+fun getString(provider: Provider<String>): String {
+    return provider.get()
+}
 plugins {
-    id("kotlin-android")
-    alias(libs.plugins.gms.google.services)
-    alias(libs.plugins.firebase.crashlytics)
+    //id("kotlin-android")
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.nav.safe.args)
     alias(libs.plugins.dagger.hilt)
     id("kotlin-parcelize")
+
+    alias(libs.plugins.compose.compiler)
+
+
+    alias(libs.plugins.gms.google.services)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
@@ -45,15 +54,19 @@ android {
         create("playstation") {
             dimension = "playstation"
             applicationId = "io.vonley.mi"
-            externalNativeBuild.cmake {
-                cppFlags += "-DPROD"
+            externalNativeBuild {
+                cmake {
+                    cppFlags += "-DPROD"
+                }
             }
         }
         create("playstationTest") {
             dimension = "playstation"
             applicationId = "io.vonley.mi"
-            externalNativeBuild.cmake {
-                cppFlags += "-DDEBUG"
+            externalNativeBuild {
+                cmake {
+                    cppFlags += "-DDEBUG"
+                }
             }
         }
     }
@@ -68,12 +81,37 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
     kotlinOptions {
         jvmTarget = "1.8"
         freeCompilerArgs = listOf("-Xjvm-default=all-compatibility")
+    }
+
+    composeCompiler {
+        enableStrongSkippingMode = true
+        reportsDestination = layout.buildDirectory.dir("compose_compiler")
+        stabilityConfigurationFile = rootProject.layout.projectDirectory.file("stability_config.conf")
+    }
+
+    kotlinOptions {
+        jvmTarget = getString(libs.versions.jvm)
+        val composeReportsDir = "compose_reports"
+        val path = project.layout.buildDirectory.get().dir(composeReportsDir).asFile.absolutePath
+        println(path)
+        freeCompilerArgs += listOf(
+            "-P",
+            "plugin:androidx.compose.compiler.plugins.kotlin:stabilityConfigurationPath=$rootDir/stability_config.conf"
+        )
+        /*freeCompilerArgs += listOf(
+            "-P",
+            "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=${path}"
+        )*/
+        freeCompilerArgs += listOf(
+            "-P",
+            "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=${path}"
+        )
     }
     buildFeatures {
         compose = true
@@ -84,9 +122,13 @@ android {
         abortOnError = false
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.10"
+        kotlinCompilerExtensionVersion = "1.5.14"
     }
-
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
     /*
     androidComponents {
         onVariants(selector().all()) { variant ->
