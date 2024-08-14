@@ -25,7 +25,7 @@ android {
     namespace = "io.vonley.mi"
     compileSdk = 35
     ndkVersion = "25.1.8937393"
-    buildToolsVersion = "34.0.0"
+    buildToolsVersion = "35.0.0"
     defaultConfig {
         applicationId = "io.vonley.mi"
         minSdk = 21
