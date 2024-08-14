@@ -145,21 +145,21 @@ interface SharedPreferenceManager {
         }
 
     companion object {
-        const val CACHED: Int = R.string.preference_jb_cache
-        const val UUID: Int = R.string.preference_uuid
-        const val VOICE: Int = R.string.preference_voices
-        const val SPEED: Int = R.string.preference_speed
-        const val PITCH: Int = R.string.preference_pitch
-        const val FTPPATH: Int = R.string.preference_ftp_loc
-        const val FTPUSER: Int = R.string.preference_ftp_user
-        const val FTPPASS: Int = R.string.preference_ftp_pass
-        const val TARGETNAME: Int = R.string.preference_target_name
-        const val TARGETVER: Int = R.string.preference_target_version
-        const val MIJBSERVERPORT: Int = R.string.preference_jb_port
-        const val MISCANINTERVAL: Int = R.string.preference_jb_scan
-        const val MIJBFEATUREPORT: Int = R.string.preference_jb_feature
-        const val MIJBSERVICE: Int = R.string.preference_jb_service
-        const val UPDATE: Int = R.string.preference_app_update
+        val CACHED: Int get() = R.string.preference_jb_cache
+        val UUID: Int get() = R.string.preference_uuid
+        val VOICE: Int get() = R.string.preference_voices
+        val SPEED: Int get() = R.string.preference_speed
+        val PITCH: Int get() = R.string.preference_pitch
+        val FTPPATH: Int get() = R.string.preference_ftp_loc
+        val FTPUSER: Int get() = R.string.preference_ftp_user
+        val FTPPASS: Int get() = R.string.preference_ftp_pass
+        val TARGETNAME: Int get() = R.string.preference_target_name
+        val TARGETVER: Int get() = R.string.preference_target_version
+        val MIJBSERVERPORT: Int get() = R.string.preference_jb_port
+        val MISCANINTERVAL: Int get() = R.string.preference_jb_scan
+        val MIJBFEATUREPORT: Int get() = R.string.preference_jb_feature
+        val MIJBSERVICE: Int get() = R.string.preference_jb_service
+        val UPDATE: Int get() = R.string.preference_app_update
     }
 }
 
