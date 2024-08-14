@@ -23,13 +23,13 @@ plugins {
 
 android {
     namespace = "io.vonley.mi"
-    compileSdk = 34
+    compileSdk = 35
     ndkVersion = "25.1.8937393"
     buildToolsVersion = "34.0.0"
     defaultConfig {
         applicationId = "io.vonley.mi"
         minSdk = 21
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 7
         versionName = "1.1.1-alpha"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
