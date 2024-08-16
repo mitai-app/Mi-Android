@@ -1,6 +1,6 @@
 [versions]
 jvm = "11"
-agp = "8.7.0-alpha05"
+agp = "8.7.0-alpha06"
 imageLabelingVersion = "17.0.9"
 imageLabelingCustomVersion = "17.0.3"
 kotlin = "2.0.0"

@@ -18,8 +18,7 @@ import javax.inject.Inject
 class SendPackageUseCase @Inject constructor(
     val repo: PackageRepository,
     val service: PSXService,
-    val miServer: MiServer,
-    val manager: SharedPreferenceManager
+    val miServer: MiServer
 ) {
     operator fun invoke(pkg: Package, onPayloadCallback: PayloadCallback): Flow<Resource<String>> = flow {
         when (pkg.type) {
@@ -55,7 +54,7 @@ class SendPackageUseCase @Inject constructor(
                     return@flow
                 }
 
-                val version = manager.targetVersion?.replace(".", "")
+                val version = service.manager.targetVersion?.replace(".", "")
                 if(version.isNullOrEmpty()) {
                     this@flow.emit(
                         Resource.Error(

@@ -11,8 +11,8 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
-
-
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <application
         android:name="io.vonley.mi.MiApplication"
         android:allowBackup="true"
@@ -63,6 +63,15 @@
             android:name="io.vonley.mi.intents.PSXService"
             android:enabled="true"
             android:exported="true" />
+
+
+        <service
+            android:name="io.vonley.mi.intents.PSXServiceJob"
+            android:enabled="true"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="true" />
+
+
     </application>
 
     <queries>

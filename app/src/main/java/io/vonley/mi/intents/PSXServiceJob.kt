@@ -1,6 +1,8 @@
 package io.vonley.mi.intents
 
 import android.app.Service
+import android.app.job.JobParameters
+import android.app.job.JobService
 import android.content.Intent
 import android.os.IBinder
 import com.google.gson.GsonBuilder
@@ -22,7 +24,22 @@ import javax.inject.Inject
 import kotlin.coroutines.CoroutineContext
 
 @AndroidEntryPoint
-class PSXService : Service(), BaseClient {
+class PSXServiceJob : JobService(), BaseClient {
+
+    override fun onStartJob(params: JobParameters?): Boolean {
+        if (manager.jbService) {
+            Mi.log(Mi.MiEvent.MI_SERVICE_START, Pair("Service", PSXService::class.java.name))
+            binder.jb.startService()
+        }
+        binder.sync.getClients(true)
+        checkforUpdates()
+        return true
+    }
+
+    override fun onStopJob(params: JobParameters?): Boolean {
+
+        return true
+    }
 
     override val TAG: String = PSXService::class.simpleName?:"PSXService"
 
@@ -36,20 +53,11 @@ class PSXService : Service(), BaseClient {
     @SharedPreferenceStorage
     lateinit var manager: SharedPreferenceManager
 
-    override fun onBind(intent: Intent?): IBinder {
-
-        return binder
-    }
 
     private var check = true
-    private var meta: Meta? = null
+    private var meta: PSXService.Meta? = null
     private val seconds = 60
 
-    data class Meta(val version: String, val changes: String, val build: String) {
-        override fun toString(): String {
-            return GsonBuilder().create().toJson(this)
-        }
-    }
 
     private var update: Job? = null
     private fun checkforUpdates() {
@@ -85,7 +93,8 @@ class PSXService : Service(), BaseClient {
                                         }
                                         changes.toString()
                                     }else ""
-                                    this@PSXService.meta = Meta(version, change, build)
+                                    this@PSXServiceJob.meta =
+                                        PSXService.Meta(version, change, build)
                                 }
                             }
                         }
@@ -113,12 +122,7 @@ class PSXService : Service(), BaseClient {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        if (manager.jbService) {
-            Mi.log(Mi.MiEvent.MI_SERVICE_START, Pair("Service", PSXService::class.java.name))
-            binder.jb.startService()
-        }
-        binder.sync.getClients(true)
-        checkforUpdates()
+
         return START_STICKY
     }
 
@@ -141,6 +145,3 @@ class PSXService : Service(), BaseClient {
 
 
 }
-
-val String.ver: Semver
-    get() = Semver(this)
