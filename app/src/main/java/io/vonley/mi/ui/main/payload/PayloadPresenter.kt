@@ -1,6 +1,6 @@
 package io.vonley.mi.ui.main.payload
 
-import io.vonley.mi.base.BasePresenter
+import io.vonley.mi.common.base.BasePresenter
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
 import io.vonley.mi.di.network.MiServer
 import io.vonley.mi.di.network.impl.PSXServiceImpl

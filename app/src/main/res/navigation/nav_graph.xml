@@ -25,7 +25,7 @@
 
     <fragment
         android:id="@+id/fragment_console"
-        android:name="io.vonley.mi.ui.main.console.ConsoleFragment"
+        android:name="io.vonley.mi.ui.main.console.presentation.ConsoleFragment"
         android:label="Consoles"
         tools:layout="@layout/fragment_console">
 

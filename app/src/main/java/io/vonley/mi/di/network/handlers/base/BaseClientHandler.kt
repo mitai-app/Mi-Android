@@ -15,9 +15,9 @@ abstract class BaseClientHandler <N : OnClientListener, D> : CoroutineScope, Obs
 
     val listeners = HashMap<Class<*>, N>()
 
-    override fun onChanged(t: D?) {
-        if (t != null) {
-            handle(t)
+    override fun onChanged(value: D) {
+        if (value != null) {
+            handle(value)
         }
     }
 

@@ -1,15 +1,18 @@
 package io.vonley.mi.di.network.impl
 
+import io.vonley.mi.Mi
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
 import io.vonley.mi.di.annotations.GuestInterceptorOkHttpClient
 import io.vonley.mi.di.network.MiServer
 import io.vonley.mi.di.network.PSXService
-import io.vonley.mi.di.network.SyncService
+import io.vonley.mi.ui.screens.consoles.domain.remote.SyncService
 import io.vonley.mi.di.network.callbacks.PayloadCallback
 import io.vonley.mi.extensions.*
-import io.vonley.mi.models.Client
 import io.vonley.mi.models.Payload
 import io.vonley.mi.models.enums.Feature
+import io.vonley.mi.ui.screens.consoles.data.remote.get
+import io.vonley.mi.ui.screens.consoles.data.remote.set
+import io.vonley.mi.ui.screens.consoles.domain.model.Client
 import io.vonley.mi.utils.SharedPreferenceManager
 import kotlinx.coroutines.*
 import okhttp3.Headers
@@ -34,9 +37,19 @@ class PSXServiceImpl @Inject constructor(
             feature: Feature
         ): Boolean {
             val socket = sync[client, feature]
-
             if (socket?.isConnected == true) {
+                when(feature){
+                    Feature.PS3MAPI -> {
 
+                    }
+                    Feature.WEBMAN -> {
+
+                    }
+                    Feature.CCAPI -> {
+
+                    }
+                    else -> return false
+                }
             }
             return false
         }
@@ -58,6 +71,11 @@ class PSXServiceImpl @Inject constructor(
             launch {
                 val feats = filter.map { feature -> this@PSXServiceImpl[target] = feature; feature }
                     .filter { this@PSXServiceImpl[target, it] != null }
+                val params = arrayOf(
+                    Pair("console_features", feats.joinToString { it.name }),
+                    Pair("console_target", target.type.name)
+                )
+                Mi.log(Mi.MiEvent.CONSOLE_SERVICES, *params)
                 withContext(Dispatchers.Main) {
                     synchronized(liveTarget) {
                         setTarget(target)
@@ -130,7 +148,8 @@ class PSXServiceImpl @Inject constructor(
                             callback.onWriting(payload)
                         }
                         socket.getOutputStream().use { out ->
-                            out.write(payload.data)
+                            payload.stream.copyTo(out, payload.size.toInt())
+                            //out.write(payload.data)
                             out.flush()
                         }
                         withContext(Dispatchers.Main) {

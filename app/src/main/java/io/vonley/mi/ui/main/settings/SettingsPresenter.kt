@@ -3,10 +3,10 @@ package io.vonley.mi.ui.main.settings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import io.vonley.mi.base.BasePresenter
+import io.vonley.mi.common.base.BasePresenter
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
 import io.vonley.mi.di.network.MiServer
-import io.vonley.mi.persistence.AppDatabase
+import io.vonley.mi.di.persistence.AppDatabase
 import io.vonley.mi.utils.SharedPreferenceManager
 import javax.inject.Inject
 

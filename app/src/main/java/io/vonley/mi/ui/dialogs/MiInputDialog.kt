@@ -10,7 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
 import io.vonley.mi.R
-import io.vonley.mi.base.BaseContract
+import io.vonley.mi.common.base.BaseContract
 import io.vonley.mi.databinding.DialogMiInputBinding
 
 

@@ -1,12 +1,12 @@
 # ミ Mi - PS4 & PS3 Remote Tool　
-Android App Developed by Vonley (formally Mr-Smithy-x)
+Android/iOS App Developed by Smithy
 
-- [Github:  @vonley-io](https://github.com/vonley-io)
+- [Github:  @vonley-io](https://github.com/mitai-app)
 - [Twitter: @MrSmithyx](https://twitter.com/MrSmithyx)
 - [Patreon: @MrSmithyx](https://patreon.com/MrSmithyx)
 
 ## App Features:
-- sleirsgoevy JB Host(6.72, 7.02 7.5X, 9.00) + mi.js helper, loads goldenhen 2.1 upon jailbreak
+- sleirsgoevy JB Host(6.72, 7.02 7.5X, 9.00) + mi.js helper, loads goldenhen 2.2.4 upon jailbreak
 - Ability to send payload to goldenhen binloader port 9090 or Orbis API 6023
 - mi.js (an extension to help send status updates to the android app)
 - Can send payloads to GoldenHen.
@@ -17,7 +17,7 @@ Android App Developed by Vonley (formally Mr-Smithy-x)
 - Enter: http://{android_ip_here}:8080/ (on PS4)
 - Click that only hyperlink at the bottom
 - Exploit will do exploity things, just wait as the app loads the payload (may take a while depending on connection)
-- Golden Hen v2.1 will load from android app.
+- Golden Hen v2.2.4 will load from android app.
 
 ## How to load consoles
 - Enable FTP on GoldenHen (port 2121)
@@ -25,32 +25,6 @@ Android App Developed by Vonley (formally Mr-Smithy-x)
 - Having CCAPI, PS3MAPI, WebMan Mod will allow the app to find the console.
 ## OR
 - You can add a new console via the console page, then click on the target.
-
-
-# GoldHEN - PS4 Homebrew Enabler 2.1
-
-## Changelog 2.1
-- Config file (/data/GoldHEN/config.ini)
-- Improved rest mode support
-- Added Klog Server 3232
-
-## Features
-- Homebrew Enabler
-- Debug Settings
-- VR Support
-- Remote Package Install
-- Rest Mode Support + improved in v2.1
-- External HDD Support
-- Official External HDD Format Support
-- Debug Trophies Support
-- sys_dynlib_dlsym Patch
-- UART Enabler
-- Never Disable Screenshot
-- Remote Play Enabler
-- FW Update Block
-- FTP Server on 2121 port
-- BinLoader Server on 9090 port
-- CE-30391-6 Error CMOS Fix
 
 ### Credits
 

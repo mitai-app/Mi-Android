@@ -5,13 +5,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import io.vonley.mi.di.network.MiServer
-import io.vonley.mi.di.network.SyncService
+import io.vonley.mi.ui.screens.consoles.domain.remote.SyncService
 import javax.inject.Inject
 import kotlin.coroutines.CoroutineContext
 
 class PSXServiceBinder @Inject constructor() : Binder(), CoroutineScope {
 
-    protected val job = Job()
+    private val job = Job()
 
     override val coroutineContext: CoroutineContext
         get() = Dispatchers.IO + job
@@ -23,6 +23,6 @@ class PSXServiceBinder @Inject constructor() : Binder(), CoroutineScope {
     lateinit var sync: SyncService
 
     companion object {
-        val TAG = PSXServiceBinder::class.java.name
+        val TAG = PSXServiceBinder::class.simpleName ?: "PSXServiceBinder"
     }
 }

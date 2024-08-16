@@ -1,6 +1,6 @@
 package io.vonley.mi.ui.main.settings
 
-import io.vonley.mi.base.BaseContract
+import io.vonley.mi.common.base.BaseContract
 
 interface SettingsContract {
 

@@ -2,7 +2,7 @@ package io.vonley.mi.models
 
 import android.os.Parcelable
 import androidx.room.Entity
-import kotlinx.android.parcel.Parcelize
+import kotlinx.parcelize.Parcelize
 
 @Entity
 @Parcelize

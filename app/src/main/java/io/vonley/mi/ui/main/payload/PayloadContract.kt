@@ -1,6 +1,6 @@
 package io.vonley.mi.ui.main.payload
 
-import io.vonley.mi.base.BaseContract
+import io.vonley.mi.common.base.BaseContract
 import io.vonley.mi.di.network.callbacks.PayloadCallback
 import io.vonley.mi.models.Payload
 import io.vonley.mi.utils.SharedPreferenceManager
