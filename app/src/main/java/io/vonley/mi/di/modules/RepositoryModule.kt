@@ -1,25 +1,42 @@
 package io.vonley.mi.di.modules
 
+import dagger.Binds
 import dagger.Module
-import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.components.ActivityRetainedComponent
-import dagger.hilt.android.scopes.ActivityRetainedScoped
-import io.vonley.mi.di.network.SyncService
-import io.vonley.mi.di.repository.ConsoleRepository
-import io.vonley.mi.persistence.ConsoleDao
+import dagger.hilt.components.SingletonComponent
+import io.vonley.mi.ui.screens.consoles.data.repository.ConsoleRepositoryImpl
+import io.vonley.mi.ui.screens.consoles.domain.repository.ConsoleRepository
+import io.vonley.mi.ui.screens.ftp.data.repository.FTPRepositoryImpl
+import io.vonley.mi.ui.screens.ftp.domain.repository.FTPRepository
+import io.vonley.mi.ui.screens.packages.data.remote.PayloadSenderImpl
+import io.vonley.mi.ui.screens.packages.data.repository.PackageRepositoryImpl
+import io.vonley.mi.ui.screens.packages.domain.remote.PayloadSender
+import io.vonley.mi.ui.screens.packages.domain.repository.PackageRepository
+import io.vonley.mi.ui.screens.settings.data.SettingsRepositoryImpl
+import io.vonley.mi.ui.screens.settings.domain.SettingsRepository
+import javax.inject.Singleton
 
 @Module
-@InstallIn(ActivityRetainedComponent::class)
-object RepositoryModule {
+@InstallIn(SingletonComponent::class)
+abstract class RepositoryModule {
 
-    @Provides
-    @ActivityRetainedScoped
-    fun provideConsoleRepository(
-        service: SyncService,
-        consoleDao: ConsoleDao
-    ): ConsoleRepository {
-        return ConsoleRepository(service, consoleDao)
-    }
+    @Binds
+    @Singleton
+    abstract fun bindConsoleRepository(impl: ConsoleRepositoryImpl): ConsoleRepository
 
+    @Binds
+    @Singleton
+    abstract fun bindFTPRepository(impl: FTPRepositoryImpl): FTPRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPackageRepository(impl: PackageRepositoryImpl): PackageRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPayloadSender(impl: PayloadSenderImpl): PayloadSender
+
+    @Binds
+    @Singleton
+    abstract fun bindSettingsRepository(impl: SettingsRepositoryImpl): SettingsRepository
 }

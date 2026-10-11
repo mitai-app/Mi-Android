@@ -1,55 +1,79 @@
 package io.vonley.mi.di.network.protocols.klog
 
-import android.text.Spannable
+import io.vonley.mi.common.coroutines.supervisedIoContext
 import io.vonley.mi.di.network.PSXService
-import io.vonley.mi.extensions.d
-import io.vonley.mi.extensions.i
-import kotlinx.coroutines.Dispatchers
+import io.vonley.mi.extensions.e
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import java.io.BufferedReader
-import javax.inject.Inject
-import kotlin.coroutines.CoroutineContext
+import java.io.OutputStream
 
-class KLogImpl @Inject constructor(override val service: PSXService) : KLog, KLog.KLogger {
+class KLogImpl(override val service: PSXService) : KLog {
 
-    private val job = Job()
-
-    override val loggers: HashMap<Class<*>, KLog.KLogger> = hashMapOf(Pair(this.javaClass, this))
-
+    private val scope = CoroutineScope(supervisedIoContext(TAG))
+    private var reader: Job? = null
     private var _br: BufferedReader? = null
 
-    override var onGoing: Job? = null
+    private val _logs = MutableSharedFlow<String>(
+        replay = REPLAY,
+        extraBufferCapacity = REPLAY,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    override val logs: SharedFlow<String> = _logs.asSharedFlow()
 
-    override fun attach(logger: KLog.KLogger) {
-        loggers[logger.javaClass] = logger
-    }
+    private val _isStreaming = MutableStateFlow(false)
+    override val isStreaming: StateFlow<Boolean> = _isStreaming.asStateFlow()
 
-    override fun detach(logger: KLog.KLogger) {
-        loggers.remove(logger.javaClass)
-    }
+    override val pw: OutputStream get() = socket.getOutputStream()
+    override val br: BufferedReader get() = _br ?: throw IllegalStateException("KLog is not connected")
 
-    override val coroutineContext: CoroutineContext
-        get() = Dispatchers.IO + job
-
-    override fun onLog(string: Spannable) {
-        string.d(TAG)
-    }
-
-    override suspend fun recv(): String? {
-        return try {
-            if (_br == null) {
-                _br = socket.getInputStream().bufferedReader()
+    override fun connect() {
+        if (reader?.isActive == true) return
+        reader = scope.launch {
+            val socket = socketOrNull ?: service.sync.createSocket(service.target, feature)
+            if (socket == null) {
+                "Unable to open klog socket".e(TAG)
+                return@launch
             }
-            val readLine = _br?.readLine()
-            readLine
-        } catch (ex: Exception) {
-            ex.printStackTrace()
-            _br = null
-            null
+            _br = socket.getInputStream().bufferedReader()
+            _isStreaming.value = true
+            try {
+                while (isActive) {
+                    // readLine() returns null once the console closes the stream
+                    val line = recv() ?: break
+                    _logs.emit(line)
+                }
+            } catch (e: Throwable) {
+                "klog stream ended: ${e.message}".e(TAG)
+            } finally {
+                _isStreaming.value = false
+                _br = null
+                // A remote close leaves isConnected == true; drop it so the next connect reopens.
+                runCatching { socket.close() }
+            }
         }
     }
 
-    override val TAG: String
-        get() = KLogImpl::class.simpleName ?: KLogImpl::class.java.simpleName
+    override fun disconnect() {
+        reader?.cancel()
+        reader = null
+        // readLine() ignores cancellation; closing the socket unblocks it.
+        runCatching { socketOrNull?.close() }
+    }
 
+    override val TAG: String
+        get() = KLogImpl::class.simpleName ?: "KLogImpl"
+
+    private companion object {
+        const val REPLAY = 500
+    }
 }

@@ -1,7 +1,5 @@
 package io.vonley.mi.di.network.protocols.ccapi
 
-import androidx.lifecycle.LiveData
-import io.vonley.mi.di.network.impl.get
 import io.vonley.mi.di.network.protocols.common.PSXNotifier
 import io.vonley.mi.di.network.protocols.common.PSXProtocol
 import io.vonley.mi.di.network.protocols.common.cmds.Boot
@@ -9,12 +7,8 @@ import io.vonley.mi.di.network.protocols.common.cmds.Buzzer
 import io.vonley.mi.di.network.protocols.common.cmds.LedColor
 import io.vonley.mi.di.network.protocols.common.cmds.LedStatus
 import io.vonley.mi.di.network.protocols.common.models.*
-import io.vonley.mi.di.network.protocols.ps3mapi.PS3MAPI
 import io.vonley.mi.models.enums.Feature
-import java.io.BufferedReader
 import java.io.IOException
-import java.io.InputStreamReader
-import java.net.Socket
 import java.net.URLEncoder
 
 enum class CCAPIERROR {
@@ -54,11 +48,8 @@ interface CCAPI : PSXProtocol, PSXNotifier {
     suspend fun getPids(): List<Process>
 
     override val feature: Feature get() = Feature.CCAPI
-    private val _socket: Socket? get() = service[service.target!!, feature]
-    override val socket: Socket get() = _socket!!
 
     val processes: List<Process>
-    val liveProcesses: LiveData<List<Process>>
     var attached: Boolean
     var process: Process?
 
@@ -72,25 +63,11 @@ interface CCAPI : PSXProtocol, PSXNotifier {
     }
 
     @Throws(IOException::class)
-    suspend fun getSimpleRequest(urlString: String): String? {
-        return getRequest(urlString)?.body?.string()
-    }
+    suspend fun getSimpleRequest(urlString: String): String? = fetch(urlString)
 
     @Throws(IOException::class)
-    suspend fun getListRequest(urlString: String): List<String> {
-        return BufferedReader(
-            InputStreamReader(
-                getRequest(urlString)?.body?.byteStream() ?: return emptyList()
-            )
-        ).use { br ->
-            val stringList: MutableList<String> = ArrayList()
-            var stub: String? = null
-            while (br.readLine().also { stub = it } != null) {
-                stringList.add(stub ?: break)
-            }
-            return@use stringList
-        }
-    }
+    suspend fun getListRequest(urlString: String): List<String> =
+        fetch(urlString)?.lines()?.filter { it.isNotEmpty() } ?: emptyList()
 
     /**
      * Set the mode for the ps3
@@ -200,8 +177,8 @@ interface CCAPI : PSXProtocol, PSXNotifier {
      * @throws IOException
      */
     @Throws(IOException::class)
-    override suspend fun buzzer(buzzer: Buzzer) {
-        getSimpleRequest(compileUrl(Builder.ringBuzzer(buzzer)))
+    override suspend fun buzzer(buzz: Buzzer) {
+        getSimpleRequest(compileUrl(Builder.ringBuzzer(buzz)))
     }
 
 
@@ -347,8 +324,9 @@ interface CCAPI : PSXProtocol, PSXNotifier {
 
     @Throws(CCAPIException::class, IOException::class)
     suspend fun getMemoryString(addr: String, size: Int): String? {
-        return if (process != null) {
-            getMemoryString(process!!.process, addr, size)
+        val attached = process
+        return if (attached != null) {
+            getMemoryString(attached.process, addr, size)
         } else {
             throw CCAPIException(CCAPIERROR.NOT_ATTACHED, "You are not attached to any processes")
         }
@@ -380,11 +358,11 @@ interface CCAPI : PSXProtocol, PSXNotifier {
             get() = DIR.GETPROCESSLIST.name.lowercase()
 
         fun getProcessName(pid: String): String {
-            return DIR.GETPROCESSNAME.name.toLowerCase() + "?pid=$pid"
+            return DIR.GETPROCESSNAME.name.lowercase() + "?pid=$pid"
         }
 
         fun shutDown(boot: Boot): String {
-            return DIR.SHUTDOWN.name.toLowerCase() + "?mode=${boot.code}"
+            return DIR.SHUTDOWN.name.lowercase() + "?mode=${boot.code}"
         }
 
         fun notify(notifyicons: NotifyIcon, message: String): String {
