@@ -13,15 +13,13 @@ class GetRepositoryUseCase @Inject constructor(
 ) {
     operator fun invoke(): Flow<Resource<List<Repo>>> = flow {
         emit(Resource.Loading())
-        val repo = repository.getRepositories()
-        emit(repo)
+        emit(repository.getRepositories())
     }.catch {
         emit(Resource.Error("Unable to fetch data source", emptyList()))
     }
 
     operator fun invoke(search: String): Flow<Resource<List<Repo>>> = flow {
-        val repo = repository.searchRelevance(search)
-        emit(repo)
+        emit(repository.searchRelevance(search))
     }.catch {
         emit(Resource.Error("Repo not found!", emptyList()))
     }

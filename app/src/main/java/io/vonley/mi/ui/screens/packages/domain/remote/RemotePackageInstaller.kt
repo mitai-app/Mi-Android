@@ -1,9 +1,12 @@
 package io.vonley.mi.ui.screens.packages.domain.remote
 
 import io.vonley.mi.models.Payload
-import kotlinx.coroutines.Job
 
+/**
+ * Hosts packages on the phone so the console's Remote Package Installer can
+ * download them.
+ */
 interface RemotePackageInstaller {
-    fun hostPackage(vararg payload: Payload): Array<String>
-    fun start(port: Int = 12800): Job
+    /** Serves [payload] and returns the URL the console should fetch it from. */
+    fun hostPackage(payload: Payload): String
 }

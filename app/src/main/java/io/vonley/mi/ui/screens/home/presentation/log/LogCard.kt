@@ -1,94 +1,41 @@
 package io.vonley.mi.ui.screens.home.presentation.log
 
-
-import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.*
-import io.vonley.mi.models.*
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.unit.dp
+import io.vonley.mi.di.network.JbLog
+import io.vonley.mi.models.bg
 
-
-@OptIn(ExperimentalUnitApi::class)
 @Composable
-fun LogCardBase(title: String?, description: String, background: Color) {
+fun LogCard(log: JbLog, modifier: Modifier = Modifier) {
+    val background = log.cmd?.bg ?: MaterialTheme.colorScheme.surfaceVariant
+    val content = if (background.luminance() > 0.5f) Color(0xFF1C1B1F) else Color.White
     Card(
         shape = RoundedCornerShape(8.dp),
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .wrapContentHeight()
-            .padding(16.dp, 8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = background
-        )
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = background, contentColor = content),
     ) {
-        Column(
-            modifier = Modifier
-                .padding(24.dp, 16.dp)
-        ) {
-            if (title != null) {
+        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+            val device = log.device
+            if (log.cmd != null && device != null) {
                 Text(
-                    text = title,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = TextUnit(16F, TextUnitType.Sp),
-                    color = Color.White,
-                )
-                Spacer(modifier = Modifier.padding(0.dp))
-            }
-            if (description.isNotEmpty()) {
-                Text(
-                    text = description,
-                    color = Color.White,
+                    "${device.device} (${device.version}): ${device.ip}",
+                    style = MaterialTheme.typography.labelMedium,
                 )
             }
+            Text(log.message, style = MaterialTheme.typography.bodyMedium)
         }
     }
-}
-
-@Composable
-fun LogCard(log: MiCMDResponse) {
-    var title: String? = null
-    if (log.device != null) {
-        title = "${log.device!!.device} (${log.device!!.version}): ${log.device!!.ip}"
-    }
-    LogCardBase(title = title, description = log.response, background = log.data.cmd.bg)
-}
-
-
-@Preview(showSystemUi = true, showBackground = true)
-@Composable
-fun PreviewLogCardList() {
-    val device = Device("PS4","9.00", "192.168.11.45")
-    val logs = arrayOf(
-        MiCMDResponse("Initializing setup", MiResponse.Cmd(MIEnumCMD.INITIATED), device),
-        MiCMDResponse("Starting Jailbreak", MiResponse.Cmd(MIEnumCMD.STARTED), device),
-        MiCMDResponse("Press X to Continue", MiResponse.Cmd(MIEnumCMD.CONTINUE), device),
-        MiCMDResponse("Mi is requesting the payload", MiResponse.Cmd(MIEnumCMD.PAYLOAD_REQUEST), device),
-        MiCMDResponse("Payload Sent", MiResponse.Cmd(MIEnumCMD.PAYLOAD), device),
-        MiCMDResponse("Pending.....", MiResponse.Cmd(MIEnumCMD.PENDING), device),
-        MiCMDResponse("Jailbreak complete", MiResponse.Cmd(MIEnumCMD.SUCCESS), device),
-        MiCMDResponse("Jailbreak failed", MiResponse.Cmd(MIEnumCMD.FAILED), device),
-
-
-    )
-    Column(modifier = Modifier.verticalScroll(state = ScrollState(0))) {
-        logs.forEach {
-            LogCard(log = it)
-        }
-    }
-}
-
-@Preview(showSystemUi = true, showBackground = true)
-@Composable
-fun PreviewLogCard() {
-    val device = Device("PS4","9.00", "192.168.11.45")
-    LogCard(log = MiCMDResponse("Jailbreak complete", MiResponse.Cmd(MIEnumCMD.SUCCESS), device))
 }

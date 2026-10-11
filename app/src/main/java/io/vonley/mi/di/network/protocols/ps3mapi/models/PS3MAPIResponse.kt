@@ -33,22 +33,20 @@ data class PS3MAPIResponse(
 
         private fun findResponse(value: Int) = Code.values().find { c -> c.value == value }
 
-        private fun parseResponse(success: Boolean, response: String): PS3MAPIResponse {
-            if (success) {
-                val responseCode = Integer.valueOf(response.substring(0, 3)).toInt()
-                var buffer = response.substring(4).replace("\r", "").replace("\n", "")
-                if (buffer.contains("OK: ")) {
-                    buffer = buffer.replace("OK: ", "")
-                }
-                return create(success, buffer, findResponse(responseCode))
-            }
-            return create(success, response, null)
+        private fun parseResponse(response: String): PS3MAPIResponse {
+            val responseCode = response.take(3).toIntOrNull()
+                ?: return create(false, response, null)
+            val buffer = response.drop(4)
+                .replace("\r", "")
+                .replace("\n", "")
+                .replace("OK: ", "")
+            return create(true, buffer, findResponse(responseCode))
         }
 
         fun parse(
             response: String,
         ): PS3MAPIResponse {
-            return parseResponse(true, response)
+            return parseResponse(response)
         }
 
         fun create(

@@ -1,6 +1,5 @@
 package io.vonley.mi.di.modules
 
-import android.app.Application
 import android.content.Context
 import androidx.room.Room
 import dagger.Module
@@ -8,17 +7,11 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import io.vonley.mi.common.files.LocalFileSource
+import io.vonley.mi.common.files.LocalFileSourceImpl
 import io.vonley.mi.di.annotations.SharedPreferenceStorage
-import io.vonley.mi.ui.screens.ftp.domain.remote.MiFTPClient
-import io.vonley.mi.di.services.VoiceService
-import io.vonley.mi.di.services.impl.VoiceServiceImpl
 import io.vonley.mi.di.persistence.AppDatabase
 import io.vonley.mi.ui.screens.consoles.data.local.ConsoleDao
-import io.vonley.mi.ui.screens.consoles.domain.remote.SyncService
-import io.vonley.mi.ui.screens.consoles.data.repository.ConsoleRepositoryImpl
-import io.vonley.mi.ui.screens.consoles.domain.repository.ConsoleRepository
-import io.vonley.mi.ui.screens.ftp.data.repository.FTPRepositoryImpl
-import io.vonley.mi.ui.screens.ftp.domain.repository.FTPRepository
 import io.vonley.mi.ui.screens.packages.data.local.PackageRepositoryDao
 import io.vonley.mi.utils.SharedPreferenceManager
 import io.vonley.mi.utils.SharedPreferenceManagerImpl
@@ -34,34 +27,18 @@ object LocalStorageModule {
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
         return Room.databaseBuilder(context, AppDatabase::class.java, "mi.db")
-            .fallbackToDestructiveMigration()
+            .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }
 
     @Provides
     @Singleton
-    fun provideTTS(
-        context: Application,
-        @SharedPreferenceStorage manager: SharedPreferenceManager
-    ): VoiceService {
-        return VoiceServiceImpl(context, manager)
-    }
+    fun provideConsoleDao(appDatabase: AppDatabase): ConsoleDao = appDatabase.consoleDao()
 
     @Provides
     @Singleton
-    fun provideConsoleDao(appDatabase: AppDatabase): ConsoleDao {
-        return appDatabase.consoleDao()
-    }
+    fun providePackageRepositoryDao(appDatabase: AppDatabase): PackageRepositoryDao = appDatabase.repoDao()
 
-    @Provides
-    @Singleton
-    fun providePackageRepositoryDao(appDatabase: AppDatabase): PackageRepositoryDao {
-        return appDatabase.repoDao()
-    }
-
-    /**
-     * Consider looking into Datastore
-     */
     @Provides
     @Singleton
     @SharedPreferenceStorage
@@ -72,27 +49,8 @@ object LocalStorageModule {
         return SharedPreferenceManagerImpl(context, preferences)
     }
 
-
-
     @Provides
     @Singleton
-    fun provideConsoleRepository(
-        service: SyncService,
-        consoleDao: ConsoleDao
-    ): ConsoleRepository {
-        return ConsoleRepositoryImpl(service, consoleDao)
-    }
-
-
-
-    @Provides
-    @Singleton
-    fun provideFTPRepository(
-        client: MiFTPClient,
-        @SharedPreferenceStorage manager: SharedPreferenceManager
-    ): FTPRepository {
-        return FTPRepositoryImpl(client, manager)
-    }
-
-
+    fun provideLocalFileSource(@ApplicationContext context: Context): LocalFileSource =
+        LocalFileSourceImpl(context)
 }

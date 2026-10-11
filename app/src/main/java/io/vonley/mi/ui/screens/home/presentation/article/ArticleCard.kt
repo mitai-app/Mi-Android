@@ -1,110 +1,74 @@
 package io.vonley.mi.ui.screens.home.presentation.article
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.*
+import androidx.compose.ui.unit.dp
 import io.vonley.mi.Mi
 import io.vonley.mi.R
-import io.vonley.mi.extensions.isLink
 import io.vonley.mi.models.Article
 
+@DrawableRes
+private fun iconFor(name: String?): Int? = when (name) {
+    "question" -> R.mipmap.question
+    "help" -> R.mipmap.help
+    "team" -> R.mipmap.team
+    else -> null
+}
 
-@OptIn(ExperimentalUnitApi::class)
 @Composable
-fun ArticleCard(article: Article) {
+fun ArticleCard(article: Article, modifier: Modifier = Modifier) {
+    val uriHandler = LocalUriHandler.current
     Card(
         shape = RoundedCornerShape(20.dp),
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .wrapContentHeight()
-            .padding(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = article.background
-        )
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .clickable(enabled = article.link != null) {
+                article.link?.let { runCatching { uriHandler.openUri(it) } }
+            },
+        colors = CardDefaults.cardColors(containerColor = article.background, contentColor = Color.White),
     ) {
-        Column(
-            modifier = Modifier
-                .padding(Dp(24F))
-        ) {
-            Text(
-                text = article.name,
-                fontWeight = FontWeight.Bold,
-                fontSize = TextUnit(18F, TextUnitType.Sp),
-                color = Color.White,
-            )
-            Spacer(modifier = Modifier.padding(4.dp))
-            Text(
-                text = article.description,
-                color = Color.White,
-            )
+        Column(modifier = Modifier.padding(24.dp)) {
+            Text(text = article.name, style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = article.description, style = MaterialTheme.typography.bodyMedium)
         }
-        if (article.icon != null) {
-            //help, question, team
-            if (article.icon!!.isLink())
-            {
-                val id = R.mipmap.orb
-                val painter = painterResource(id = id)
-                Image(
-                    painter = painter,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
-                        .heightIn(240.dp, 240.dp),
-                    contentScale = ContentScale.Crop,
-                    contentDescription = null // decorative element
-                )
-            } else {
-                val context = LocalContext.current
-                val drawableId = remember(article.icon) {
-                    context.resources.getIdentifier(
-                        article.icon,
-                        "mipmap",
-                        context.packageName
-                    )
-                }
-                Image(
-                    painter = painterResource(id = drawableId),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
-                        .heightIn(240.dp, 240.dp),
-                    contentScale = ContentScale.Crop,
-                    contentDescription = null // decorative element
-                )
-            }
+        iconFor(article.icon)?.let { icon ->
+            Image(
+                painter = painterResource(id = icon),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(240.dp)
+                    .clip(RoundedCornerShape(20.dp)),
+                contentScale = ContentScale.Crop,
+                contentDescription = null
+            )
         }
     }
 }
 
-
-@Preview(showSystemUi = true, showBackground = true)
+@Preview(showBackground = true)
 @Composable
-fun PreviewMessageCardList() {
-    Column(modifier = Modifier.verticalScroll(state = ScrollState(0))) {
-        Mi.ARTICLES.forEach {
-            ArticleCard(article = it)
-        }
-    }
-}
-
-@Preview(showSystemUi = true, showBackground = true)
-@Composable
-fun PreviewMessageCard() {
+private fun PreviewArticleCard() {
     ArticleCard(article = Mi.ARTICLES[0])
 }

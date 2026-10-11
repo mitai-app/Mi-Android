@@ -1,103 +1,61 @@
 package io.vonley.mi.ui.screens.ftp.data.repository
 
-import io.vonley.mi.common.Resource
-import io.vonley.mi.di.annotations.SharedPreferenceStorage
+import android.net.Uri
+import io.vonley.mi.common.files.LocalFileSource
+import io.vonley.mi.ui.screens.consoles.domain.remote.SyncService
+import io.vonley.mi.ui.screens.ftp.domain.model.FtpConnection
+import io.vonley.mi.ui.screens.ftp.domain.model.RemoteFile
 import io.vonley.mi.ui.screens.ftp.domain.remote.MiFTPClient
-import io.vonley.mi.ui.screens.ftp.domain.repository.FTPEvent
 import io.vonley.mi.ui.screens.ftp.domain.repository.FTPRepository
-import io.vonley.mi.utils.SharedPreferenceManager
-import org.apache.commons.net.ftp.FTPFile
-import java.io.InputStream
+import kotlinx.coroutines.flow.StateFlow
+import java.io.File
 import javax.inject.Inject
 
 class FTPRepositoryImpl @Inject constructor(
     private val ftp: MiFTPClient,
-    @SharedPreferenceStorage private val manager: SharedPreferenceManager
+    private val sync: SyncService,
+    private val files: LocalFileSource,
 ) : FTPRepository {
 
-    override val currentPath: String
-        get() = manager.ftpPath ?: "/"
+    override val connection: StateFlow<FtpConnection> get() = ftp.connection
 
-    override suspend fun navigateTo(ftpFile: FTPFile): Resource<FTPEvent> {
-        return if (ftpFile.isDirectory) {
-            ftp.setWorkingDir(ftpFile)
-            return ftp.getDir()?.let { dir ->
-                Resource.Success(FTPEvent.WorkingDir(dir))
-            }?: run {
-                Resource.Error("Are you connected to the network?", FTPEvent.WorkingDir(ftpFile.rawListing))
-            }
-        } else {
-            Resource.Error("Unable to set working dir because it is a file", FTPEvent.WorkingDir(ftpFile.rawListing))
+    override suspend fun connectToTarget(): Boolean {
+        val ip = sync.target?.ip ?: return false
+        return ftp.connect(ip)
+    }
+
+    override suspend fun disconnect() = ftp.disconnect()
+
+    override suspend fun open(dir: RemoteFile): Boolean = ftp.open(dir)
+
+    override suspend fun navigateUp(): Boolean = ftp.navigateUp()
+
+    override suspend fun refresh(): Boolean = ftp.refresh()
+
+    override suspend fun upload(uri: Uri): String? {
+        val staged = files.stage(uri)
+        return try {
+            staged.name.takeIf { ftp.upload(staged.name, staged.file) }
+        } finally {
+            staged.file.delete()
         }
     }
 
-    override suspend fun navigateTo(path: String): Resource<FTPEvent> {
-        ftp.setWorkingDir(path)
-        return Resource.Success(FTPEvent.WorkingDir(path))
-    }
-
-    override suspend fun delete(ftpFile: FTPFile): Resource<FTPEvent> {
-        val delete = ftp.delete(ftpFile)
-        val event = FTPEvent.Delete(filename = ftpFile.name)
-        return if (delete) {
-            Resource.Success(event)
-        } else {
-            Resource.Error("Unable to delete", event)
+    override suspend fun replace(file: RemoteFile, uri: Uri): Boolean {
+        val staged = files.stage(uri)
+        return try {
+            ftp.upload(file.name, staged.file)
+        } finally {
+            staged.file.delete()
         }
     }
 
-    override suspend fun download(ftpFile: FTPFile): Resource<FTPEvent> {
-        val download = ftp.download(ftpFile)
-        val event: Resource<FTPEvent> = download?.let {
-            Resource.Success(FTPEvent.Download(filename = ftpFile.name, it))
-        } ?: run {
-            Resource.Error("Unable to download", FTPEvent.Download(filename = ftpFile.name))
-        }
-        return event
+    override suspend fun download(file: RemoteFile): File? {
+        val target = files.downloadTarget(file.name)
+        return target.takeIf { ftp.download(file, it) }
     }
 
-    override suspend fun replace(
-        ftpFile: FTPFile,
-        stream: InputStream
-    ): Resource<FTPEvent> {
-        val replaced = ftp.upload(ftpFile.name, stream)
-        val replaceEvent = FTPEvent.Replace(filename = ftpFile.name)
-        return if (replaced) {
-            Resource.Success(replaceEvent)
-        } else {
-            Resource.Error("Unable to replace file", replaceEvent)
-        }
-    }
+    override suspend fun delete(file: RemoteFile): Boolean = ftp.delete(file)
 
-    override suspend fun upload(
-        filename: String,
-        stream: InputStream
-    ): Resource<FTPEvent> {
-        val upload = ftp.upload(filename, stream)
-        val event = FTPEvent.Upload(
-            filename = filename
-        )
-        return if (upload) {
-            Resource.Success(event)
-        } else {
-            Resource.Error("Unable to upload file", event)
-        }
-    }
-
-    override suspend fun rename(
-        ftpFile: FTPFile,
-        input: String
-    ): Resource<FTPEvent> {
-        val rename = ftp.rename(ftpFile, input)
-        val upload = FTPEvent.Rename(
-            originalFilename = ftpFile,
-            toInputName = input
-        )
-        return if (rename) {
-            Resource.Success(upload)
-        } else {
-            Resource.Error("Unable to rename file", upload)
-        }
-    }
-
+    override suspend fun rename(file: RemoteFile, newName: String): Boolean = ftp.rename(file, newName)
 }

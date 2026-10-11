@@ -1,14 +1,15 @@
 package io.vonley.mi.ui.screens.consoles.domain.repository
 
-import androidx.lifecycle.LiveData
+import io.vonley.mi.ui.screens.consoles.domain.model.Client
 import io.vonley.mi.ui.screens.consoles.domain.model.Console
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
 interface ConsoleRepository {
-    fun getMyConsoles(): LiveData<List<Console>>
-    suspend fun exists(ip: String): Boolean
-    suspend fun updateNickName(ip: String, nickname: String)
-    suspend fun insert(console: String)
-    suspend fun getConsole(ip: String): Console
-    suspend fun setPin(ip: String, b: Boolean)
-    fun selectConsole(console: Console)
+    val target: StateFlow<Client?>
+    fun getMyConsoles(): Flow<List<Console>>
+    suspend fun addConsole(ip: String): Console
+    suspend fun setPin(ip: String, pinned: Boolean)
+    fun selectConsole(console: Client)
+    fun refresh()
 }

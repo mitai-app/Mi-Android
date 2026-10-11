@@ -1,45 +1,39 @@
 package io.vonley.mi.ui.screens.consoles.domain.remote
 
-import android.net.Network
-import android.net.NetworkInfo
-import android.net.wifi.WifiInfo
-import android.text.format.Formatter
-import androidx.lifecycle.LiveData
-import io.vonley.mi.di.network.handlers.ClientHandler
-import io.vonley.mi.di.network.listeners.OnConsoleListener
 import io.vonley.mi.models.enums.Feature
 import io.vonley.mi.ui.screens.consoles.domain.model.Client
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.StateFlow
 import okhttp3.OkHttpClient
 import java.net.Socket
 
 /**
- * Implementations are in this class
- * @see SyncServiceImpl
+ * Scans the local network for consoles and owns the long-lived sockets
+ * opened to the selected target.
+ * @see io.vonley.mi.ui.screens.consoles.data.remote.SyncServiceImpl
  */
-interface SyncService : CoroutineScope {
+interface SyncService {
 
-    val liveTarget: LiveData<Client>
-    val target: Client? get() = liveTarget.value
-    val wifiInfo: WifiInfo
-    val activeNetworkInfo: NetworkInfo?
-    val activeNetwork: Network?
-    val localDeviceIpInt: Int get() = wifiInfo.ipAddress
-    val localDeviceIp: String get() = Formatter.formatIpAddress(localDeviceIpInt)
+    val targetFlow: StateFlow<Client?>
+    val target: Client? get() = targetFlow.value
+
+    /** SSID of the connected Wi-Fi network, or empty when unknown. */
+    val wifiSsid: String
+    val localDeviceIp: String
     val isConnected: Boolean
-    val handlers: HashMap<Class<*>, ClientHandler>
-    val TAG: String
     val http: OkHttpClient
 
-    fun cleanup()
-    fun initialize()
-    fun isNetworkAvailable(): Boolean
-    fun isWifiAvailable(): Boolean
     fun getClients(loop: Boolean = false)
-    fun setTarget(client: Client)
-    fun addConsoleListener(console: OnConsoleListener)
     fun stop()
-    fun removeConsoleListener(console: OnConsoleListener)
+    fun setTarget(client: Client)
+    fun cleanup()
     fun createSocket(client: Client?, feature: Feature): Socket?
     fun getSocket(client: Client?, feature: Feature): Socket?
+}
+
+operator fun SyncService.set(client: Client?, feature: Feature) {
+    createSocket(client, feature)
+}
+
+operator fun SyncService.get(client: Client?, feature: Feature): Socket? {
+    return getSocket(client, feature)
 }

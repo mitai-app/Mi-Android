@@ -12,6 +12,7 @@ import java.math.BigDecimal
  * @property prereleaseIdentifiers dot separated list of pre-release identifiers.
  * @property buildMetadataIdentifiers dot separated list of build metadata identifiers.
  */
+@ConsistentCopyVisibility
 data class Semver internal constructor (
     val major: String,
     val minor: String = "0",

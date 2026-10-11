@@ -1,39 +1,44 @@
 package io.vonley.mi.di.network
 
-import android.util.Log
-import fi.iki.elonen.NanoHTTPD
-import kotlinx.coroutines.*
-import io.vonley.mi.BuildConfig
-import io.vonley.mi.di.network.impl.MiServerImpl
-import io.vonley.mi.models.Payload
+import io.vonley.mi.models.Device
+import io.vonley.mi.models.MIEnumCMD
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 
-interface MiServer : CoroutineScope {
+/** One line of the jailbreak session log; [cmd] is set for mi.js status updates. */
+data class JbLog(
+    val id: Long,
+    val message: String,
+    val cmd: MIEnumCMD? = null,
+    val device: Device? = null,
+)
+
+/** One-shot notices raised while a PS4 runs the jailbreak. Not replayed. */
+sealed interface JbEvent {
+    data class JailbreakSucceeded(val message: String) : JbEvent
+    data class JailbreakFailed(val message: String) : JbEvent
+    data class PayloadSent(val message: String) : JbEvent
+    data class SendPayloadFailed(val attempts: Int) : JbEvent
+}
+
+/** The local web server a PS4 browser visits to run the jailbreak. */
+interface MiServer {
     val activePort: Int
-    val service: PSXService
-    var server: NanoHTTPD?
-    fun stopService()
-    fun startService()
-    fun restartService() {
-        launch {
-            try {
-                Log.e("MiServer","Stopping....")
-                while (server?.isAlive == true) {
-                    stopService()
-                    delay(2000)
-                }
-                Log.e("MiServer","Restarting....")
-                withContext(Dispatchers.Main){
-                    startService()
-                }
-            } catch (e: Throwable) {
-                if (BuildConfig.DEBUG) {
-                    Log.e("MiServer", "could not stop hmmm ${e.message}")
-                }
-            }
-        }
-    }
 
-    fun add(jb: MiServerImpl.MiJbServerListener)
-    fun remove(jb: MiServerImpl.MiJbServerListener)
-    fun hostPackage(vararg payload: Payload): Array<String>
+    /** URL to type into the PS4 browser, e.g. http://192.168.1.20:8080 */
+    val hostAddress: String
+
+    val isRunning: StateFlow<Boolean>
+
+    /** The PS4 that most recently loaded the host. */
+    val device: StateFlow<Device?>
+
+    /** Session log, newest last, bounded in size. */
+    val logs: StateFlow<List<JbLog>>
+
+    val events: SharedFlow<JbEvent>
+
+    fun startService()
+    fun stopService()
+    fun restartService()
 }

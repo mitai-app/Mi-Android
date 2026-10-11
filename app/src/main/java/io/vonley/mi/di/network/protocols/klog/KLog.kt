@@ -1,31 +1,24 @@
 package io.vonley.mi.di.network.protocols.klog
 
-import android.text.Spannable
-import io.vonley.mi.di.network.protocols.common.PSXProtocol
+import io.vonley.mi.di.network.protocols.common.SocketProtocol
 import io.vonley.mi.models.enums.Feature
-import kotlinx.coroutines.Job
-import java.net.Socket
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 
-interface KLog : PSXProtocol {
+/** GoldHEN's kernel log stream (port 3232). */
+interface KLog : SocketProtocol {
 
     override val feature: Feature get() = Feature.KLOG
-    val _socket: Socket?
-    override val socket: Socket get() = _socket!!
 
     override val TAG: String
         get() = KLog::class.qualifiedName ?: KLog::javaClass.name
 
-    interface KLogger {
-        fun onLog(string: Spannable)
-    }
+    /** Raw log lines; recent lines are replayed to new collectors. */
+    val logs: SharedFlow<String>
 
-    val loggers: HashMap<Class<*>, KLogger>
-
-    var onGoing: Job?
+    val isStreaming: StateFlow<Boolean>
 
     fun connect()
 
-    fun attach(logger: KLogger)
-
-    fun detach(logger: KLogger)
+    fun disconnect()
 }

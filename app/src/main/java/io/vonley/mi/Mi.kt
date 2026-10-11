@@ -4,9 +4,9 @@ import android.os.Build
 import android.os.Bundle
 import androidx.compose.ui.graphics.Color
 import com.google.firebase.analytics.FirebaseAnalytics
-import com.google.firebase.analytics.ktx.analytics
-import com.google.firebase.analytics.ktx.logEvent
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.Firebase
+import com.google.firebase.analytics.analytics
+import com.google.firebase.analytics.logEvent
 import io.vonley.mi.models.Article
 
 object Mi {
@@ -59,17 +59,12 @@ object Mi {
                     is Double -> {
                         param(pair.first, pair.second as Double)
                     }
-                    is Array<*> -> {
-                        if ((pair.second as? Array<Bundle>) != null) {
-                            param(pair.first, pair.second as Array<Bundle>)
-                        }
-                    }
                     else -> param(pair.first, pair.second.toString())
                 }
             }
             param("Model", Build.MODEL)
             param("Device", Build.DEVICE)
-            param("Device", Build.SUPPORTED_ABIS.joinToString())
+            param("Abis", Build.SUPPORTED_ABIS.joinToString())
             param("Version", Build.VERSION.SDK_INT.toLong())
         }
     }

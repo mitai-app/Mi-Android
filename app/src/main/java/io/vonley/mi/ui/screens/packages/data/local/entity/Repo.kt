@@ -1,14 +1,11 @@
 package io.vonley.mi.ui.screens.packages.data.local.entity
 
-import android.os.Parcelable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
 import io.vonley.mi.di.persistence.converters.PackageConverter
-import kotlinx.android.parcel.Parcelize
 
 @Entity
-@Parcelize
 @TypeConverters(PackageConverter::class)
 data class Repo(
     @PrimaryKey
@@ -18,7 +15,7 @@ data class Repo(
     val banner: String,
     val description: String,
     val packages: Array<Package>
-): Parcelable {
+){
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is Repo) return false

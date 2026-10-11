@@ -9,254 +9,131 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
-import android.util.Log
 import android.webkit.MimeTypeMap
-import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import dagger.hilt.android.qualifiers.ApplicationContext
+import androidx.core.content.ContextCompat
 import fi.iki.elonen.NanoHTTPD
-import io.vonley.mi.BuildConfig
 import io.vonley.mi.Mi
-import io.vonley.mi.Mi.MiEvent.*
+import io.vonley.mi.Mi.MiEvent.JB_CONTINUE
+import io.vonley.mi.Mi.MiEvent.JB_FAILURE
+import io.vonley.mi.Mi.MiEvent.JB_INITIATED
+import io.vonley.mi.Mi.MiEvent.JB_PAYLOAD
+import io.vonley.mi.Mi.MiEvent.JB_PAYLOAD_REQUEST
+import io.vonley.mi.Mi.MiEvent.JB_STARTED
+import io.vonley.mi.Mi.MiEvent.JB_SUCCESS
 import io.vonley.mi.R
-import io.vonley.mi.di.annotations.SharedPreferenceStorage
+import io.vonley.mi.common.coroutines.supervisedIoContext
+import io.vonley.mi.di.network.JbEvent
+import io.vonley.mi.di.network.JbLog
 import io.vonley.mi.di.network.MiServer
 import io.vonley.mi.di.network.PSXService
 import io.vonley.mi.extensions.e
 import io.vonley.mi.extensions.fromJson
-import io.vonley.mi.models.*
-import io.vonley.mi.ui.main.MainActivity
+import io.vonley.mi.models.Device
+import io.vonley.mi.models.MIEnumCMD
+import io.vonley.mi.models.MiCMDResponse
+import io.vonley.mi.models.jbPath
+import io.vonley.mi.models.supported
+import io.vonley.mi.ui.MainActivity
 import io.vonley.mi.utils.SharedPreferenceManager
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.io.ByteArrayInputStream
-import java.io.File
-import java.io.InputStream
-import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Socket
-import java.util.zip.ZipEntry
-import java.util.zip.ZipInputStream
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.coroutines.CoroutineContext
 
-class MiServerImpl constructor(
-    @ApplicationContext val context: Context,
-    @SharedPreferenceStorage val manager: SharedPreferenceManager,
-    override val service: PSXService
+class MiServerImpl(
+    private val context: Context,
+    private val manager: SharedPreferenceManager,
+    private val service: PSXService
 ) : MiServer, CoroutineScope {
 
-    interface MiJbServerListener {
-        fun onDeviceConnected(device: Device)
-        fun onLog(string: String)
-        fun onJailbreakSucceeded(message: String)
-        fun onJailbreakFailed(message: String)
-        fun onPayloadSent(msg: String? = null)
-        fun onUnsupported(s: String)
-        fun onCommand(mi: MiResponse<MiResponse.Cmd>)
-        fun onSendPayloadAttempt(attempt: Int)
-        fun onSendPkgSuccess(payload: Payload) {
+    override val coroutineContext: CoroutineContext = supervisedIoContext(TAG)
 
-        }
+    private val _events = MutableSharedFlow<JbEvent>(
+        extraBufferCapacity = 16,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    override val events: SharedFlow<JbEvent> = _events.asSharedFlow()
 
-        fun onSendPkgFail(payload: Payload) {
+    private val _device = MutableStateFlow<Device?>(null)
+    override val device: StateFlow<Device?> = _device.asStateFlow()
 
-        }
+    private val logIds = AtomicLong()
+    private val _logs = MutableStateFlow<List<JbLog>>(emptyList())
+    override val logs: StateFlow<List<JbLog>> = _logs.asStateFlow()
+
+    private val _isRunning = MutableStateFlow(false)
+    override val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
+
+    private var server: NanoHTTPD? = null
+    private var payloadJob: Job? = null
+
+    private val miJs: String by lazy { readAsset("jb/mi.js") }
+    private val miJsCached: String by lazy { readAsset("jb/mi-cached.js") }
+    private val failHtml: String by lazy { readAsset("pages/fail.html") }
+    private val payloads: Map<String, String> = mapOf(
+        "6.72" to "payloads/goldhen/672.bin",
+        "7.02" to "payloads/goldhen/702.bin",
+        "7.50" to "payloads/goldhen/750.bin",
+        "7.51" to "payloads/goldhen/751.bin",
+        "7.55" to "payloads/goldhen/755.bin",
+        "9.00" to "payloads/goldhen/900.bin"
+    )
+
+    override val activePort: Int
+        get() = server?.listeningPort?.takeIf { it > 0 } ?: manager.jbPort
+
+    override val hostAddress: String
+        get() = "http://${service.localDeviceIp}:$activePort"
+
+    private fun emit(event: JbEvent) {
+        _events.tryEmit(event)
     }
 
-    override var server: NanoHTTPD? = null
-    private val callbacks: HashMap<Class<*>, MiJbServerListener> = hashMapOf()
-    private val callback: MiJbServerListener = object : MiJbServerListener {
-
-        override fun onSendPkgFail(payload: Payload) {
-            val name = "onSendPkgFail"
-            launch {
-                withContext(Dispatchers.Main) {
-                    callbacks.onEach { a ->
-                        if (BuildConfig.DEBUG) {
-                            Log.e(TAG, "Calling ${a.key.name}::${name}(string) / ${payload.name}")
-                        }
-                        a.value.onSendPkgFail(payload)
-                    }
-                }
-            }
-        }
-
-        override fun onSendPkgSuccess(payload: Payload) {
-            val name = "onSendPkgSuccess"
-            launch {
-                withContext(Dispatchers.Main) {
-                    callbacks.onEach { a ->
-                        if (BuildConfig.DEBUG) {
-                            Log.e(TAG, "Calling ${a.key.name}::${name}(string) / ${payload.name}")
-                        }
-                        a.value.onSendPkgSuccess(payload)
-                    }
-                }
-            }
-        }
-
-        override fun onDeviceConnected(device: Device) {
-            val name = "onDeviceConnected"
-            launch {
-                withContext(Dispatchers.Main) {
-                    callbacks.onEach { a ->
-                        if (BuildConfig.DEBUG) {
-                            Log.e(TAG, "Calling ${a.key.name}::${name}(string) / ${device.device}")
-                        }
-                        a.value.onDeviceConnected(device)
-                    }
-                }
-            }
-        }
-
-        override fun onLog(string: String) {
-            val name = "onLog"
-            launch {
-                withContext(Dispatchers.Main) {
-                    callbacks.onEach { a ->
-                        if (BuildConfig.DEBUG) {
-                            Log.e(TAG, "Calling ${a.key.name}::${name}(string) / $string")
-                        }
-                        a.value.onLog(string)
-                    }
-                }
-            }
-        }
-
-        override fun onJailbreakSucceeded(message: String) {
-            val name = "onJailbreakSucceeded"
-            launch {
-                withContext(Dispatchers.Main) {
-                    callbacks.onEach { a ->
-                        if (BuildConfig.DEBUG) {
-                            Log.e(TAG, "Calling ${a.key.name}::${name}(message)")
-                        }
-                        a.value.onJailbreakSucceeded(message)
-                    }
-                }
-            }
-        }
-
-        override fun onJailbreakFailed(message: String) {
-            val name = "onJailbreakFailed"
-            launch {
-                withContext(Dispatchers.Main) {
-                    callbacks.onEach { a ->
-                        if (BuildConfig.DEBUG) {
-                            Log.e(TAG, "Calling ${a.key.name}::${name}(message)")
-                        }
-                        a.value.onJailbreakFailed(message)
-                    }
-                }
-            }
-        }
-
-        override fun onPayloadSent(msg: String?) {
-            val name = "onPayloadSent"
-            launch {
-                withContext(Dispatchers.Main) {
-                    callbacks.onEach { a ->
-                        if (BuildConfig.DEBUG) {
-                            Log.e(TAG, "Calling ${a.key.name}::${name}($msg)")
-                        }
-                        a.value.onPayloadSent(msg)
-                    }
-                }
-            }
-        }
-
-        override fun onUnsupported(s: String) {
-            val name = "onUnsupported"
-            launch {
-                withContext(Dispatchers.Main) {
-                    callbacks.onEach { a ->
-                        if (BuildConfig.DEBUG) {
-                            Log.e(TAG, "Calling ${a.key.name}::${name}(string)")
-                        }
-                        a.value.onUnsupported(s)
-                    }
-                }
-            }
-        }
-
-        override fun onCommand(mi: MiResponse<MiResponse.Cmd>) {
-            val name = "onCommand"
-            launch {
-                withContext(Dispatchers.Main) {
-                    callbacks.onEach { a ->
-                        if (BuildConfig.DEBUG) {
-                            Log.e(TAG, "Calling ${a.key.name}::${name}(Mi<Mi.Cmd>())")
-                        }
-                        a.value.onCommand(mi)
-                    }
-                }
-            }
-        }
-
-        override fun onSendPayloadAttempt(attempt: Int) {
-            val name = "onSendPayloadAttempt"
-            launch {
-                withContext(Dispatchers.Main) {
-                    callbacks.onEach { a ->
-                        if (BuildConfig.DEBUG) {
-                            Log.e(TAG, "Calling ${a.key.name}::${name}($attempt)")
-                        }
-                        a.value.onSendPayloadAttempt(attempt)
-                    }
-                }
-            }
-        }
-    }
-    private val miJs: ByteArray = context.assets.open("jb/mi.js").readBytes()
-    private val miJsCached: ByteArray = context.assets.open("jb/mi-cached.js").readBytes()
-    private val failHtml: ByteArray = context.assets.open("pages/fail.html").readBytes()
-    private val routes: HashMap<String, ByteArray> = hashMapOf()
-    private val payloads: HashMap<String, ByteArray> by lazy {
-        return@lazy hashMapOf(
-            Pair("6.72", context.assets.open("payloads/goldhen/672.bin").readBytes()),
-            Pair("7.02", context.assets.open("payloads/goldhen/702.bin").readBytes()),
-            Pair("7.50", context.assets.open("payloads/goldhen/750.bin").readBytes()),
-            Pair("7.51", context.assets.open("payloads/goldhen/751.bin").readBytes()),
-            Pair("7.55", context.assets.open("payloads/goldhen/755.bin").readBytes()),
-            Pair("9.00", context.assets.open("payloads/goldhen/900.bin").readBytes())
-        )
+    private fun log(message: String, cmd: MIEnumCMD? = null, device: Device? = null) {
+        val entry = JbLog(logIds.incrementAndGet(), message, cmd, device)
+        _logs.update { (it + entry).takeLast(MAX_LOGS) }
     }
 
-    private val root: String get() = console!!.jbPath
-    private var ready: Boolean = false
-    private var console: Device? = null
-    private var attempts = 3
-
-    fun create(
-        title: String = "ミ (Mi) - PS4 Management Tool",
-        content: String = "Visit http://${service.localDeviceIp}:${activePort} on your ps4!",
-        summary: String = "Jailbreak server is running in the background"
-    ): Notification {
-        val channel_id = "MI"
+    private fun createNotification(): Notification {
+        val channelId = "MI"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "MI"
-            val desc = "Mi Server"
-            val importance = NotificationManager.IMPORTANCE_DEFAULT
-            val channel = NotificationChannel(channel_id, name, importance).apply {
-                description = desc
+            val channel = NotificationChannel(channelId, "MI", NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = "Mi Server"
             }
             val man = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             man.createNotificationChannel(channel)
         }
         val intent = Intent(context, MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         val pendingIntent = PendingIntent.getActivity(
             context,
-            System.currentTimeMillis().toInt(),
+            0,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-
+        val title = "ミ (Mi) - PS4 Management Tool"
+        val content = "Visit $hostAddress on your ps4!"
         val style = NotificationCompat.BigTextStyle()
             .bigText(content)
             .setBigContentTitle(title)
-            .setSummaryText(summary)
+            .setSummaryText("Jailbreak server is running in the background")
 
-        val server = NotificationCompat.Builder(context, channel_id)
+        return NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.mipmap.orb)
             .setStyle(style)
             .setContentTitle(title)
@@ -266,481 +143,244 @@ class MiServerImpl constructor(
             .setOngoing(true)
             .setAutoCancel(false)
             .build()
-        return server
     }
 
-    private fun init(): NanoHTTPD {
-        return object : NanoHTTPD(manager.jbPort), CoroutineScope {
-
-            val job = Job()
-
-            var jobThread: Job? = null
-
-            override fun start() {
-                jobThread = launch {
-                    try {
-                        ready = true
-                        super.start()
-                        delay(3000)
-                        withContext(Dispatchers.Main) {
-                            if (ActivityCompat.checkSelfPermission(
-                                    context,
-                                    Manifest.permission.POST_NOTIFICATIONS
-                                ) != PackageManager.PERMISSION_GRANTED
-                            ) {
-                                // TODO: Consider calling
-                                //    ActivityCompat#requestPermissions
-                                // here to request the missing permissions, and then overriding
-                                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                                //                                          int[] grantResults)
-                                // to handle the case where the user grants the permission. See the documentation
-                                // for ActivityCompat#requestPermissions for more details.
-                                return@withContext
-                            }
-                            NotificationManagerCompat.from(context).notify(0, create())
-                        }
-                    } catch (e: Throwable) {
-                        ready = false
-                        if (BuildConfig.DEBUG) {
-                            Log.e(TAG, "failed to start service ${e.message}")
-                        }
-                    }
-                }
-            }
-
-            override fun stop() {
-                launch {
-                    try {
-                        jobThread?.cancelAndJoin()
-                    } catch (t: Throwable) {
-                        if (BuildConfig.DEBUG) {
-                            Log.e(TAG, "jobThread.cancelAndJoin() failed ${t.message}")
-                        }
-                    }
-                    try {
-                        super.stop()
-                        ready = false
-                    } catch (e: Throwable) {
-                        if (BuildConfig.DEBUG) {
-                            Log.e(TAG, "failed to stop service ${e.message}")
-                        }
-                    }
-
-                    delay(3000)
-                    withContext(Dispatchers.Main) {
-                        NotificationManagerCompat.from(context).cancel(0)
-                    }
-                }
-            }
-
-            override fun serve(s: IHTTPSession?): Response {
-                s?.let { session ->
-                    val uri = session.uri.toString()
-                    val console = parse(session)
-                    fun installPayload(): Response {
-                        val bytes = payloads[uri]!!
-                        "PAYLOAD DOES CONTAIN URI: $uri, size: ${bytes.size}".e("BOO YEAH")
-                        return newChunkedResponse(
-                            Response.Status.OK,
-                            "application/octet-stream",
-                            ByteArrayInputStream(bytes)
-                        )
-                    }
-                    console?.let {
-                        manager.ftpPass
-                        callback.onDeviceConnected(it)
-                        manager.targetVersion = it.version
-                        manager.targetName = it.ip
-                        val mime = getMimeType(uri) ?: "text/*"
-                        when {
-                            it.supported -> {
-                                if (this@MiServerImpl.console?.ip != it.ip) this@MiServerImpl.console = it
-                                when (uri) {
-                                    "/" -> {
-                                        val read = read("index.html")
-                                            .replace("{{BODY}}", "Mi")
-                                            .replace("{{TITLE}}", "Mi JB Host")
-                                        return newFixedLengthResponse(
-                                            Response.Status.OK,
-                                            "text/html",
-                                            read
-                                        )
-                                    }
-                                    "/mi.js" -> {
-                                        val mi = if (manager.cached) {
-                                            miJsCached.decodeToString()
-                                        } else {
-                                            miJs.decodeToString()
-                                        }
-                                        return newFixedLengthResponse(
-                                            Response.Status.OK,
-                                            "text/javascript",
-                                            mi
-                                        )
-                                    }
-                                    "/jb/cmd" -> {
-                                        Log.e(TAG, "Method: ${session.method.name}")
-                                        val map = HashMap<String, String>()
-                                        session.parseBody(map)
-                                        val body = map["postData"] ?: run {
-                                            "NO DATA".e(TAG)
-                                            return newFixedLengthResponse(
-                                                Response.Status.INTERNAL_ERROR,
-                                                "text/*",
-                                                "no data"
-                                            )
-                                        }
-                                        "DATA: $body".e(TAG)
-                                        val mi: MiResponse<MiResponse.Cmd> = body.fromJson() ?: run {
-                                            "COULD NOT PARSE".e(TAG)
-                                            return newFixedLengthResponse(
-                                                Response.Status.INTERNAL_ERROR,
-                                                "text/*",
-                                                "unable to parse body"
-                                            )
-                                        }
-                                        callback.onCommand(mi)
-                                        val cmd = mi.data.cmd
-                                        val message = mi.response
-                                        when (cmd) {
-                                            MIEnumCMD.INITIATED -> {
-                                                callback.onLog("[JB:Initiated] $message")
-                                                val params = arrayOf(
-                                                    Pair("console_device", it.device),
-                                                    Pair("console_version", it.version),
-                                                    Pair("console_supported",it.supported),
-                                                    Pair("from", MiServer::class.java.name)
-                                                )
-                                                Mi.log(JB_INITIATED, *params)}
-                                            MIEnumCMD.CONTINUE -> {
-                                                callback.onLog("[JB:Continue] $message")
-                                                val params = arrayOf(
-                                                    Pair("console_device", it.device),
-                                                    Pair("console_version", it.version),
-                                                    Pair("console_supported",it.supported),
-                                                    Pair("from", MiServer::class.java.name)
-                                                )
-                                                Mi.log(JB_CONTINUE, *params)}
-                                            MIEnumCMD.PAYLOAD_REQUEST -> {
-                                                callback.onLog("[JB:Payload:Request] $message")
-                                                val params = arrayOf(
-                                                    Pair("console_device", it.device),
-                                                    Pair("console_version", it.version),
-                                                    Pair("console_supported",it.supported),
-                                                    Pair("from", MiServer::class.java.name)
-                                                )
-                                                Mi.log(JB_PAYLOAD_REQUEST, *params)
-                                            }
-                                            MIEnumCMD.STARTED -> {
-                                                callback.onLog("[JB:Started] $message")
-                                                val params = arrayOf(
-                                                    Pair("console_device", it.device),
-                                                    Pair("console_version", it.version),
-                                                    Pair("console_supported",it.supported),
-                                                    Pair("from", MiServer::class.java.name)
-                                                )
-                                                Mi.log(JB_STARTED, *params)
-                                            }
-                                            MIEnumCMD.SUCCESS -> {
-                                                callback.onLog("[Status] Enjoy!")
-                                                callback.onJailbreakSucceeded(message)
-                                                val params = arrayOf(
-                                                    Pair("console_device", it.device),
-                                                    Pair("console_version", it.version),
-                                                    Pair("console_supported",it.supported),
-                                                    Pair("from", MiServer::class.java.name)
-                                                )
-                                                Mi.log(JB_SUCCESS, *params)
-                                            }
-                                            MIEnumCMD.FAILED -> {
-                                                callback.onLog("[JB:Failed] Somethings not right...")
-                                                callback.onJailbreakFailed(message)
-                                                val params = arrayOf(
-                                                    Pair("console_device", it.device),
-                                                    Pair("console_version", it.version),
-                                                    Pair("console_supported",it.supported),
-                                                    Pair("from", MiServer::class.java.name)
-                                                )
-                                                Mi.log(JB_FAILURE, *params)
-                                            }
-                                            MIEnumCMD.PAYLOAD -> {
-                                                callback.onLog("[Send:Payload] Initializing Payload sender (PS4 about to get blessed.)")
-                                                sendPayload(it, if(console.version == "9.00") 9090 else 9021)
-                                            }
-                                            MIEnumCMD.PENDING -> {
-                                                callback.onLog("[Send:Pending] Initializing Payload sender (PS4 about to get blessed.)")
-                                                sendPayload(it, if(console.version == "9.00") 9020 else 9021)
-                                            }
-                                            else -> return newFixedLengthResponse(
-                                                Response.Status.NOT_FOUND,
-                                                "text/*",
-                                                "invalid cmd"
-                                            )
-                                        }
-                                        return newFixedLengthResponse(
-                                            Response.Status.OK,
-                                            "text/*",
-                                            "received"
-                                        )
-                                    }
-                                    "/gh.bin" -> {
-                                        val path = uri.drop(1)
-                                        val readBytes = readBytes(path)
-                                        val byteArrayInputStream = ByteArrayInputStream(readBytes)
-                                        return newFixedLengthResponse(
-                                            Response.Status.OK,
-                                            "*/*",
-                                            byteArrayInputStream,
-                                            readBytes.size.toLong()
-                                        )
-                                    }
-                                    else -> {
-                                        val path = uri.drop(1)
-                                        if (uri.contains(".manifest")) {
-                                            if (!manager.cached) {
-                                                return newFixedLengthResponse(
-                                                    Response.Status.OK,
-                                                    "*/*",
-                                                    ""
-                                                )
-                                            }
-                                        }
-                                        Log.e(TAG, "URI: $uri")
-
-                                        var read = read(path)
-                                        if (path.contains("index.html")) {
-                                            read = read
-                                                .replace("{{BODY}}", "Mi")
-                                                .replace("{{TITLE}}", "Mi JB Host")
-                                        }
-                                        return newFixedLengthResponse(
-                                            Response.Status.OK,
-                                            mime,
-                                            read
-                                        )
-                                    }
-                                }
-                            }
-                            payloads.containsKey(uri) -> {
-                                return installPayload()
-                            }
-                            else -> {
-                                return newFixedLengthResponse(
-                                    Response.Status.OK,
-                                    "text/html",
-                                    failHtml.decodeToString()
-                                )
-                            }
-                        }
-                    } ?: run {
-
-                        if (payloads.containsKey(uri)) {
-                            return installPayload()
-                        }
-                        callback.onUnsupported("This device is not supported!")
-                        return newFixedLengthResponse(
-                            Response.Status.OK, "text/html", failHtml.decodeToString()
-                        )
-                    }
-                }
-                return super.serve(s)
-            }
-
-            override val coroutineContext: CoroutineContext
-                get() = Dispatchers.IO + job
-        }
-    }
-
-    fun extract(open: InputStream) {
-        ZipInputStream(open).use { zip ->
-            with(zip) {
-                var stub: ZipEntry? = null
-                while (nextEntry.also { stub = it } != null) {
-                    val ze: ZipEntry = stub!!
-                    Log.d(TAG, "Decompressing + ${ze.name}")
-                    if (ze.isDirectory) {
-                        createDir(ze.name)
-                    } else {
-                        val name = ze.name
-                        if (name.contains("__MACOSX")) continue
-                        //val file = File(path, name)
-                        Log.e(TAG, "Extracting: $name")
-                        try {
-                            routes[name] = readBytes()
-                            closeEntry()
-                            /*
-                            file.outputStream().use { fos ->
-                                with(fos) {
-                                    write(readBytes())
-                                }
-                                closeEntry()
-                            }*/
-                        } catch (e: Throwable) {
-                            Log.e(TAG, e.message ?: "Unable to extract")
-                            closeEntry()
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    override fun add(jb: MiJbServerListener) {
-        callbacks[jb.javaClass] = jb
-    }
-
-    override fun remove(jb: MiJbServerListener) {
-        if (callbacks.containsKey(jb.javaClass)) {
-            callbacks.remove(jb.javaClass)
-        }
-    }
-
-    override fun hostPackage(vararg payloads: Payload): Array<String> {
-        val urls = payloads.map { payload ->
-            val path = "/pkg/${payload.name}"
-            //this.payloads[path] = payload
-            //TODO: Fix
-            "http://${service.localDeviceIp}:${manager.jbPort}$path"
-        }
-        return urls.toTypedArray()
-    }
+    private fun canPostNotifications(): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
 
     override fun startService() {
+        if (server?.isAlive == true) return
         try {
-            if (server == null) {
-                server = init()
-            }
-            if (server?.wasStarted() == false) {
-                server?.start()
+            val http = JbHttpServer(manager.jbPort)
+            http.start(NanoHTTPD.SOCKET_READ_TIMEOUT, false)
+            server = http
+            _isRunning.value = true
+            if (canPostNotifications()) {
+                NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, createNotification())
             }
         } catch (e: Throwable) {
-            Log.e(TAG, e.message ?: "Hmmm unable to start service")
+            _isRunning.value = false
+            "Unable to start jb server on ${manager.jbPort}: ${e.message}".e(TAG, e)
         }
     }
-
-    override val activePort: Int
-        get() = server?.listeningPort ?: manager.jbPort
 
     override fun stopService() {
         try {
-            if (server?.wasStarted() == true) {
-                server?.stop()
-            }
-            server = null
+            server?.stop()
         } catch (e: Throwable) {
-            Log.e(TAG, e.message ?: "Hmmm idk")
+            "Unable to stop jb server: ${e.message}".e(TAG, e)
+        }
+        server = null
+        _isRunning.value = false
+        NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
+    }
+
+    override fun restartService() {
+        launch {
+            stopService()
+            startService()
         }
     }
 
-    private fun read(path: String): String {
-        return readBytes(path).decodeToString()
+    private inner class JbHttpServer(port: Int) : NanoHTTPD(port) {
+
+        override fun serve(session: IHTTPSession): Response {
+            val uri = session.uri.toString()
+            val device = parse(session)
+            if (device == null) {
+                log("A device that is not a PS4 opened the jailbreak page")
+                return newFixedLengthResponse(Response.Status.OK, "text/html", failHtml)
+            }
+
+            _device.value = device
+            manager.targetVersion = device.version
+            manager.targetName = device.ip
+
+            if (!device.supported) {
+                log("Firmware ${device.version} is not supported", device = device)
+                return newFixedLengthResponse(Response.Status.OK, "text/html", failHtml)
+            }
+
+            return when (uri) {
+                "/" -> newFixedLengthResponse(Response.Status.OK, "text/html", page(device, "index.html"))
+                "/mi.js" -> newFixedLengthResponse(
+                    Response.Status.OK,
+                    "text/javascript",
+                    if (manager.cached) miJsCached else miJs
+                )
+
+                "/jb/cmd" -> handleCommand(session, device)
+                "/gh.bin" -> {
+                    val bytes = readBytes(device, uri.drop(1))
+                    newFixedLengthResponse(Response.Status.OK, "*/*", ByteArrayInputStream(bytes), bytes.size.toLong())
+                }
+
+                else -> {
+                    val path = uri.drop(1)
+                    if (uri.contains(".manifest") && !manager.cached) {
+                        return newFixedLengthResponse(Response.Status.OK, "*/*", "")
+                    }
+                    val body = if (path.contains("index.html")) page(device, path) else read(device, path)
+                    newFixedLengthResponse(Response.Status.OK, getMimeType(uri) ?: "text/*", body)
+                }
+            }
+        }
+
+        private fun handleCommand(session: IHTTPSession, device: Device): Response {
+            val body = HashMap<String, String>()
+                .also { session.parseBody(it) }["postData"]
+                ?: return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/*", "no data")
+            val parsed: MiCMDResponse = body.fromJson()
+                ?: return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/*", "unable to parse body")
+            // The device only comes from the request headers, never the JSON body.
+            val mi = parsed.copy(device = device)
+            log(mi.response, mi.data.cmd, device)
+            val params = arrayOf(
+                "console_device" to device.device,
+                "console_version" to device.version,
+                "console_supported" to device.supported,
+                "from" to MiServer::class.java.name
+            )
+            val message = mi.response
+            when (mi.data.cmd) {
+                MIEnumCMD.INITIATED -> {
+                    Mi.log(JB_INITIATED, *params)
+                }
+
+                MIEnumCMD.CONTINUE -> {
+                    Mi.log(JB_CONTINUE, *params)
+                }
+
+                MIEnumCMD.PAYLOAD_REQUEST -> {
+                    Mi.log(JB_PAYLOAD_REQUEST, *params)
+                }
+
+                MIEnumCMD.STARTED -> {
+                    Mi.log(JB_STARTED, *params)
+                }
+
+                MIEnumCMD.SUCCESS -> {
+                    log("[Status] Enjoy!")
+                    emit(JbEvent.JailbreakSucceeded(message))
+                    Mi.log(JB_SUCCESS, *params)
+                }
+
+                MIEnumCMD.FAILED -> {
+                    log("[JB:Failed] Somethings not right...")
+                    emit(JbEvent.JailbreakFailed(message))
+                    Mi.log(JB_FAILURE, *params)
+                }
+
+                MIEnumCMD.PAYLOAD -> {
+                    log("[Send:Payload] Initializing Payload sender (PS4 about to get blessed.)")
+                    sendPayload(device, if (device.version == "9.00") 9090 else NETCAT_PORT)
+                }
+
+                MIEnumCMD.PENDING -> {
+                    log("[Send:Pending] Initializing Payload sender (PS4 about to get blessed.)")
+                    sendPayload(device, if (device.version == "9.00") 9020 else NETCAT_PORT)
+                }
+            }
+            return newFixedLengthResponse(Response.Status.OK, "text/*", "received")
+        }
     }
 
-    private fun readBytes(path: String): ByteArray {
+    private fun page(device: Device, path: String): String = read(device, path)
+        .replace("{{BODY}}", "Mi")
+        .replace("{{TITLE}}", "Mi JB Host")
+
+    private fun readAsset(path: String): String =
+        context.assets.open(path).use { it.readBytes().decodeToString() }
+
+    private fun read(device: Device, path: String): String = readBytes(device, path).decodeToString()
+
+    private fun readBytes(device: Device, path: String): ByteArray {
         return try {
-            val s = root + path
-            if (BuildConfig.DEBUG) {
-                Log.e(TAG, "Fetching: $s")
-            }
-            context.assets.open(s).readBytes()
+            context.assets.open(device.jbPath + path).use { it.readBytes() }
         } catch (e: Throwable) {
             ByteArray(0)
         }
     }
 
-    private fun createDir(name: String?) {
-        val file = File(name)
-        if (!file.isDirectory) {
-            file.mkdirs()
-        }
-    }
-
     private fun parse(session: NanoHTTPD.IHTTPSession): Device? {
-        val string = session.headers["user-agent"].toString()
-        val extractPlaystation = """\(([^()]*)\)""".toRegex()
-        val extractVersion = "([0-9]+(?:\\.[0-9]+)?)".toRegex()
-        val matchEntire = extractPlaystation.findAll(string).flatMap { it.groupValues }.distinct()
-            .filter { it.contains("playstation", true) }.toList().firstOrNull();
-        if (matchEntire != null) {
-            println(matchEntire)
-            val extracted =
-                extractVersion.findAll(matchEntire).flatMap { it.groupValues }.distinct().toList()
-            val version = extracted.last()
-            return Device(matchEntire, version, session.headers["http-client-ip"] ?: "0.0.0.0")
-        }
-        return null
+        val agent = session.headers["user-agent"].toString()
+        val playstation = """\(([^()]*)\)""".toRegex().findAll(agent)
+            .flatMap { it.groupValues }
+            .distinct()
+            .firstOrNull { it.contains("playstation", true) }
+            ?: return null
+        val version = "([0-9]+(?:\\.[0-9]+)?)".toRegex().findAll(playstation)
+            .flatMap { it.groupValues }
+            .distinct()
+            .lastOrNull()
+            ?: return null
+        return Device(playstation, version, session.headers["http-client-ip"] ?: "0.0.0.0")
     }
 
     private fun getMimeType(url: String): String? {
-        var type: String? = null
-        val extension = MimeTypeMap.getFileExtensionFromUrl(url)
-        if (extension != null) {
-            type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
-        }
-        return type;
+        val extension = MimeTypeMap.getFileExtensionFromUrl(url) ?: return null
+        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
     }
 
-    private fun sendPayload(device: Device, port: Int = 9021) {
-        payloads[device.version]?.let { payload ->
-            Log.e(TAG, "Payload Size: ${payload.size}")
-            if (payload.isEmpty()) return@let
-            val block: suspend CoroutineScope.() -> Unit = {
-                callback.onLog("[Payload:Wait] First we will wait 20 seconds for mira+netcat to do its thing.")
-                delay(20000)
-                callback.onLog("[Payload:Init] Now its time send our payload")
-                attempts = 0
-                while (attempts < ATTEMPT_LIMIT) {
-                    val check = InetAddress.getByName(device.ip).isReachable(3000) ?: break
+    /**
+     * Pushes GoldHEN to the console once the exploit has opened its loader.
+     * Tries the port the exploit asked for first, then the netcat loader the
+     * app has always used, so a wrong guess for a firmware still falls back.
+     */
+    private fun sendPayload(device: Device, port: Int) {
+        val asset = payloads[device.version] ?: run {
+            "No payload bundled for ${device.version}".e(TAG)
+            return
+        }
+        if (payloadJob?.isActive == true) return
+        payloadJob = launch {
+            val payload = context.assets.open(asset).use { it.readBytes() }
+            log("[Payload:Wait] First we will wait 20 seconds for mira+netcat to do its thing.")
+            delay(20_000)
+            log("[Payload:Init] Now its time send our payload")
+            val ports = listOf(port, NETCAT_PORT).distinct()
+            for (attempt in 1..ATTEMPT_LIMIT) {
+                for (target in ports) {
                     try {
-                        callback.onLog("[Payload:Connecting] attempting to connect to ${device.ip}:9021")
-
-                        val outSock = Socket()
-                        val inetSocketAddress = InetSocketAddress(device.ip, 9021)
-                        outSock.connect(inetSocketAddress, 10000)
-                        val outputStream = outSock.getOutputStream()
-                        val string = "[Payload:Connected] Sending GoldHen 2.1 to PS4: ${device.version}"
-                        callback.onLog(string)
-                        delay(2000)
-                        outputStream.write(payload)
-                        outputStream.flush()
-                        outputStream.close()
-                        callback.onPayloadSent(string)
-                        outSock.close()
-                        val params = arrayOf(
-                            Pair("console_device", device.device),
-                            Pair("console_version", device.version),
-                            Pair("console_supported",device.supported),
-                            Pair("from", MiServer::class.java.name)
+                        log("[Payload:Connecting] attempting to connect to ${device.ip}:$target")
+                        Socket().use { socket ->
+                            socket.connect(InetSocketAddress(device.ip, target), 10_000)
+                            val message = "[Payload:Connected] Sending GoldHen to PS4: ${device.version}"
+                            log(message)
+                            delay(2000)
+                            socket.getOutputStream().apply {
+                                write(payload)
+                                flush()
+                            }
+                            emit(JbEvent.PayloadSent("Sending payload... please wait"))
+                        }
+                        Mi.log(
+                            JB_PAYLOAD,
+                            "console_device" to device.device,
+                            "console_version" to device.version,
+                            "console_supported" to device.supported,
+                            "port" to target.toLong(),
+                            "from" to MiServer::class.java.name
                         )
-                        Mi.log(JB_PAYLOAD, *params)
-                        break
+                        return@launch
                     } catch (ex: Exception) {
-                        attempts++
-                        callback.onLog("[Payload:Retrying:$attempts/3] Attempt #$attempts: unable to connect to PS4...")
-                        callback.onSendPayloadAttempt(attempts)
-                        delay(10000)
+                        "Payload send to ${device.ip}:$target failed: ${ex.message}".e(TAG)
                     }
                 }
-                attempts = 0
+                log("[Payload:Retrying:$attempt/$ATTEMPT_LIMIT] Attempt #$attempt: unable to connect to PS4...")
+                delay(10_000)
             }
-            if (!this::port9021.isInitialized) {
-                this.port9021 = launch(block = block)
-            } else if ((!this.port9021.isActive || this.port9021.isCompleted) && !this.port9021.start()) {
-                this.port9021 = launch(block = block)
-            }
-        } ?: run {
-            "So the payloads aren't event loaded wtf".e(TAG)
+            emit(JbEvent.SendPayloadFailed(ATTEMPT_LIMIT))
         }
     }
-
-    private val job = Job()
-    private lateinit var port9021: Job
-    override val coroutineContext: CoroutineContext
-        get() = Dispatchers.IO + job
 
     companion object {
         const val ATTEMPT_LIMIT = 3
         const val TAG = "MiJbServer"
+        private const val NETCAT_PORT = 9021
+        private const val NOTIFICATION_ID = 0
+        private const val MAX_LOGS = 200
     }
-
 }

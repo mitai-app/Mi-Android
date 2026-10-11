@@ -1,355 +1,176 @@
 package io.vonley.mi.ui.screens.ftp.data.remote
 
-import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import io.vonley.mi.BuildConfig
-import io.vonley.mi.di.annotations.SharedPreferenceStorage
-import io.vonley.mi.ui.screens.ftp.domain.remote.MiFTPClient
+import io.vonley.mi.extensions.e
 import io.vonley.mi.models.enums.Feature
-import io.vonley.mi.ui.screens.consoles.domain.remote.SyncService
+import io.vonley.mi.ui.screens.ftp.domain.model.FtpConnection
+import io.vonley.mi.ui.screens.ftp.domain.model.RemoteFile
+import io.vonley.mi.ui.screens.ftp.domain.remote.MiFTPClient
 import io.vonley.mi.utils.SharedPreferenceManager
-import io.vonley.mi.utils.set
-import kotlinx.coroutines.*
-import org.apache.commons.net.ProtocolCommandEvent
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import org.apache.commons.net.PrintCommandListener
 import org.apache.commons.net.ftp.FTP
 import org.apache.commons.net.ftp.FTPClient
-import org.apache.commons.net.ftp.FTPConnectionClosedException
 import org.apache.commons.net.ftp.FTPFile
-import java.io.ByteArrayOutputStream
-import java.io.InputStream
-import java.net.InetSocketAddress
-import java.net.Socket
+import org.apache.commons.net.ftp.FTPReply
+import java.io.File
+import java.io.PrintWriter
 
-class MiFTPClientImpl constructor(
-    @SharedPreferenceStorage override val manager: SharedPreferenceManager,
-    override val sync: SyncService
+/**
+ * Thin wrapper over commons-net's [FTPClient], which is not thread-safe: every
+ * call goes through [mutex] on the IO dispatcher.
+ */
+class MiFTPClientImpl(
+    private val manager: SharedPreferenceManager
 ) : MiFTPClient {
 
-    override val connected: LiveData<Boolean>
-        get() = _connected
+    private val mutex = Mutex()
+    private val client = FTPClient().apply {
+        connectTimeout = TIMEOUT_MS
+        // The Duration overload needs API 26 (java.time); minSdk is 23.
+        @Suppress("DEPRECATION")
+        setDataTimeout(TIMEOUT_MS)
+        if (BuildConfig.DEBUG) addProtocolCommandListener(PrintCommandListener(PrintWriter(System.out), true))
+    }
+    private var host: String? = null
 
-    override val job: Job = Job()
+    private val _connection = MutableStateFlow<FtpConnection>(FtpConnection.Disconnected)
+    override val connection: StateFlow<FtpConnection> = _connection.asStateFlow()
 
-    private var client: FTPClient = FTPClient()
-    private val ftpPath get() = manager.ftpPath
-    private val ftpUser get() = manager.ftpUser
-    private val ftpPass get() = manager.ftpPass
-    private var _ip: String? = null
-    private var _port: Int? = null
+    private suspend fun <T> locked(block: suspend () -> T): T =
+        withContext(Dispatchers.IO) { mutex.withLock { block() } }
 
-    private val _cwd: MutableLiveData<Array<out FTPFile>> = MutableLiveData<Array<out FTPFile>>()
-    private val _connected: MutableLiveData<Boolean> = MutableLiveData<Boolean>(false)
+    override suspend fun connect(ip: String): Boolean = locked {
+        if (client.isConnected && host == ip) return@locked listInto(client.printWorkingDirectory() ?: "/")
+        closeQuietly()
+        _connection.value = FtpConnection.Connecting
+        for (port in Feature.FTP.ports.sortedDescending()) {
+            try {
+                client.connect(ip, port)
+                if (!FTPReply.isPositiveCompletion(client.replyCode)) {
+                    closeQuietly()
+                    continue
+                }
+                // webMAN and GoldHEN both accept anonymous:anonymous by default.
+                val user = manager.ftpUser.ifEmpty { ANONYMOUS }
+                val pass = manager.ftpPass.ifEmpty { ANONYMOUS }
+                if (!client.login(user, pass)) {
+                    closeQuietly()
+                    _connection.value = FtpConnection.Failed("Login rejected, check the FTP user and password in Settings")
+                    return@locked false
+                }
+                client.enterLocalPassiveMode()
+                client.setFileType(FTP.BINARY_FILE_TYPE)
+                host = ip
+                val start = manager.ftpPath
+                return@locked (client.changeWorkingDirectory(start) && listInto(start)) || (client.changeWorkingDirectory("/") && listInto("/"))
+            } catch (e: Throwable) {
+                "FTP connect to $ip:$port failed: ${e.message}".e(TAG)
+                closeQuietly()
+            }
+        }
+        _connection.value = FtpConnection.Failed("No FTP server found on $ip. Enable FTP on the console.")
+        false
+    }
+
+    override suspend fun disconnect() = locked {
+        closeQuietly()
+        _connection.value = FtpConnection.Disconnected
+    }
+
+    override suspend fun open(dir: RemoteFile): Boolean =
+        if (dir.isDirectory) navigateTo(dir.name) else false
+
+    override suspend fun navigateTo(path: String): Boolean = command {
+        client.changeWorkingDirectory(path) && listInto(client.printWorkingDirectory() ?: path)
+    }
+
+    override suspend fun navigateUp(): Boolean = command {
+        client.changeToParentDirectory() && listInto(client.printWorkingDirectory() ?: "/")
+    }
+
+    override suspend fun refresh(): Boolean = command {
+        listInto(client.printWorkingDirectory() ?: "/")
+    }
+
+    override suspend fun upload(name: String, source: File): Boolean = command {
+        val stored = source.inputStream().use { client.storeFile(name, it) }
+        if (stored) listInto(client.printWorkingDirectory() ?: "/")
+        stored
+    }
+
+    override suspend fun delete(file: RemoteFile): Boolean = command {
+        val deleted = if (file.isDirectory) client.removeDirectory(file.name) else client.deleteFile(file.name)
+        if (deleted) listInto(client.printWorkingDirectory() ?: "/")
+        deleted
+    }
+
+    override suspend fun download(file: RemoteFile, destination: File): Boolean = command {
+        if (file.isDirectory) return@command false
+        val ok = destination.outputStream().use { client.retrieveFile(file.name, it) }
+        if (!ok) destination.delete()
+        ok
+    }
+
+    override suspend fun rename(file: RemoteFile, newName: String): Boolean = command {
+        val renamed = client.rename(file.name, newName)
+        if (renamed) listInto(client.printWorkingDirectory() ?: "/")
+        renamed
+    }
+
+    /** Runs an operation on a connected session, reporting a dropped connection. */
+    private suspend fun command(block: () -> Boolean): Boolean = locked {
+        if (!client.isConnected) return@locked false
+        try {
+            block()
+        } catch (e: Throwable) {
+            "FTP command failed: ${e.message}".e(TAG, e)
+            if (!client.isConnected) {
+                closeQuietly()
+                _connection.value = FtpConnection.Failed("Connection to the console was lost")
+            }
+            false
+        }
+    }
+
+    private fun listInto(path: String): Boolean {
+        val files = client.listFiles()
+            ?.filter { it.name != "." && it.name != ".." }
+            ?.map { it.toRemoteFile() }
+            ?.sortedWith(compareByDescending<RemoteFile> { it.isDirectory }.thenBy { it.name.lowercase() })
+            ?: return false
+        manager.ftpPath = path
+        _connection.value = FtpConnection.Connected(host.orEmpty(), path, files)
+        return true
+    }
+
+    private fun closeQuietly() {
+        try {
+            if (client.isConnected) {
+                runCatching { client.logout() }
+                client.disconnect()
+            }
+        } catch (_: Throwable) {
+        }
+        host = null
+    }
+
+    private fun FTPFile.toRemoteFile() = RemoteFile(
+        name = name,
+        isDirectory = isDirectory,
+        size = size,
+        modifiedMillis = timestamp?.timeInMillis
+    )
 
     companion object {
-        const val TAG = ".MiFTPClientImpl"
+        const val TAG = "MiFTPClient"
+        private const val TIMEOUT_MS = 5000
+        private const val ANONYMOUS = "anonymous"
     }
-
-    private val callback = object : MiFTPEventListener {
-
-        override fun onFailedToConnect() {
-            if (BuildConfig.DEBUG) {
-                Log.e(TAG, "Unable to connect")
-            }
-        }
-
-        override fun onClosed() {
-            if (BuildConfig.DEBUG) {
-                Log.e(TAG, "ftp connection closed")
-            }
-        }
-
-        override fun onNoSelectedTarget() {
-            if (BuildConfig.DEBUG) {
-                Log.e(TAG, "No Selected Target")
-            }
-        }
-
-        override fun onLoggedIn() {
-            if (BuildConfig.DEBUG) {
-                Log.e(TAG, "User is logged in")
-            }
-        }
-
-        override fun onInvalidCredentials() {
-            if (BuildConfig.DEBUG) {
-                Log.e(TAG, "User entered invalid credentials")
-            }
-        }
-
-        override fun onDirChanged() {
-            if (BuildConfig.DEBUG) {
-                Log.e(TAG, "Directory Changed")
-            }
-        }
-
-        override fun isLoggedInAlready() {
-            if (BuildConfig.DEBUG) {
-                Log.e(TAG, "User is already logged in")
-            }
-        }
-
-    }
-
-    interface MiFTPEventListener {
-        fun onLoggedIn()
-        fun onInvalidCredentials()
-        fun onDirChanged()
-        fun isLoggedInAlready()
-        fun onFailedToConnect()
-        fun onClosed()
-        fun onNoSelectedTarget()
-    }
-
-    private suspend fun _connect(ip: String, port: Int) {
-        try {
-            client.connect(ip, port)
-            client.addProtocolCommandListener(this@MiFTPClientImpl)
-            val login = client.login(ftpUser, ftpPass)
-            if (login) {
-                setWorkingDir(ftpPath)
-                client.setFileType(FTP.BINARY_FILE_TYPE)
-                callback.onLoggedIn()
-                withContext(Dispatchers.Main) {
-                    synchronized(this) {
-                        _connected.postValue(client.isConnected)
-                    }
-                }
-            } else {
-                callback.onInvalidCredentials()
-            }
-        } catch (e: Throwable) {
-            if (BuildConfig.DEBUG) {
-                Log.e(TAG, e.message ?: "Something went wrong")
-            }
-            callback.onFailedToConnect()
-        }
-    }
-
-    override fun connect() {
-        sync.target?.let { target ->
-            launch {
-                Feature.FTP.ports.filter { port ->
-                    try {
-                        val socket = Socket()
-                        socket.connect(InetSocketAddress(target.ip, port))
-                        socket.close()
-                        return@filter true
-                    } catch (e: Throwable) {
-                        return@filter false
-                    }
-                }.firstOrNull()?.let { port ->
-                    withContext(Dispatchers.Main) {
-                        connect(target.ip, port)
-                    }
-                } ?: run {
-                    callback.onFailedToConnect()
-                }
-            }
-        } ?: run {
-            callback.onNoSelectedTarget()
-        }
-    }
-
-    override fun connect(ip: String, port: Int) {
-        if (_ip == null || _port == null) {
-            _ip = ip
-            _port = port
-        } else if (_ip != ip || _port != port) {
-            if (client.isConnected) {
-                client.disconnect()
-            }
-        }
-        val block: suspend CoroutineScope.() -> Unit = {
-            if (client.isConnected) {
-                if (_ip != ip || _port != port) {
-                    _ip = ip
-                    _port = port
-                    _connect(ip, port)
-                } else {
-                    callback.isLoggedInAlready()
-                }
-            } else {
-                _ip = ip
-                _port = port
-                _connect(ip, port)
-            }
-        }
-        launch(block = block)
-    }
-
-    override val cwd: LiveData<Array<out FTPFile>> get() = _cwd
-
-    override suspend fun setWorkingDir(ftpFile: FTPFile): Boolean {
-        if (ftpFile.isDirectory) {
-            return setWorkingDir(ftpFile.name)
-        }
-        return false
-    }
-
-    override suspend fun setWorkingDir(dir: String?): Boolean {
-        if (BuildConfig.DEBUG) {
-            Log.e(TAG, "dir: $dir")
-        }
-        try {
-            val changed = client.changeWorkingDirectory(dir)
-            client.printWorkingDirectory()?.let {
-                withContext(Dispatchers.Main) {
-                    synchronized(this) {
-                        manager[SharedPreferenceManager.FTPPATH] = it
-                    }
-                }
-            }
-            if (changed) {
-                getGWD()
-                callback.onDirChanged()
-            }
-            return changed
-        } catch (e: FTPConnectionClosedException) {
-            if (BuildConfig.DEBUG) {
-                callback.onClosed()
-            }
-        } catch (e: Throwable) {
-            if (BuildConfig.DEBUG) {
-                Log.e(TAG, e.message ?: "Something went wrong")
-            }
-        }
-        return false
-    }
-
-    private suspend fun getGWD() {
-        try {
-            if (BuildConfig.DEBUG) {
-                val cwm = client.printWorkingDirectory()
-                Log.e("CWD", "CWD: $cwm")
-            }
-            val dir: Array<out FTPFile> = if (client.isConnected) {
-                val listFiles = client.listFiles()
-                listFiles.sortByDescending { it.isDirectory }
-                listFiles
-            } else arrayOf()
-            withContext(Dispatchers.Main) {
-                synchronized(_cwd) {
-                    _cwd.postValue(dir)
-                }
-            }
-        } catch (e: Throwable) {
-            if (BuildConfig.DEBUG) {
-                Log.e(TAG, e.message ?: "Something went wrong")
-            }
-        }
-    }
-
-    override suspend fun upload(file: String, stream: InputStream): Boolean {
-        try {
-            if (client.isConnected) {
-                client.enterLocalPassiveMode()
-                val uploaded = client.storeFile(file, stream)
-                withContext(Dispatchers.IO) {
-                    stream.close()
-                }
-                if (uploaded) {
-                    getGWD()
-                }
-                return uploaded
-            }
-            return false
-        } catch (e: Throwable) {
-            if (BuildConfig.DEBUG) {
-                Log.e(TAG, e.message ?: "Something went wrong")
-            }
-        }
-        return false
-    }
-
-    override fun disconnect() {
-        launch {
-            try {
-                client.removeProtocolCommandListener(this@MiFTPClientImpl)
-                client.logout()
-                client.disconnect()
-                withContext(Dispatchers.Main) {
-                    synchronized(this) {
-                        _connected.postValue(client.isConnected)
-                    }
-                }
-            } catch (e: Throwable) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, e.message ?: "Something went wrong")
-                }
-            }
-        }
-    }
-
-    override suspend fun delete(file: FTPFile): Boolean {
-        try {
-            if (client.isConnected) {
-                if (file.isFile) {
-                    val deleteFile = client.deleteFile("${ftpPath}/${file.name}")
-                    getGWD()
-                    return deleteFile
-                }
-            }
-            return false
-        } catch (e: Throwable) {
-
-        }
-        return false
-    }
-
-    override suspend fun download(ftpFile: FTPFile): ByteArray? {
-        try {
-            if (client.isConnected) {
-                if (ftpFile.isFile) {
-                    val remoteFile = "$ftpPath/${ftpFile.name}"
-                    val stream = ByteArrayOutputStream()
-                    val success: Boolean = client.retrieveFile(remoteFile, stream)
-                    val bytes = stream.toByteArray()
-                    stream.close()
-                    if (success) {
-                        return bytes
-                    }
-                }
-            }
-        } catch (e: Throwable) {
-            if (BuildConfig.DEBUG) {
-                Log.e(TAG, e.message ?: "Something went wrong")
-            }
-        }
-        return null
-    }
-
-    override suspend fun rename(ftpFile: FTPFile, input: String): Boolean {
-        if (client.isConnected) {
-            if (ftpFile.isFile) {
-                val remoteFile = "$ftpPath/${ftpFile.name}"
-                val toRemoteFile = "$ftpPath/$input"
-                val rename = client.rename(remoteFile, toRemoteFile)
-                getGWD()
-                return rename
-            }
-        }
-        return false
-    }
-
-    override suspend fun getDir(): String? {
-        if (client.isConnected) {
-            return client.printWorkingDirectory()
-        }
-        return null
-    }
-
-    override fun protocolCommandSent(event: ProtocolCommandEvent?) {
-        if (BuildConfig.DEBUG) {
-            Log.e(TAG, "SENT: ${event?.message}")
-        }
-    }
-
-    override fun protocolReplyReceived(event: ProtocolCommandEvent?) {
-        if (BuildConfig.DEBUG) {
-            Log.e(TAG, "RCV: ${event?.message}")
-        }
-    }
-
-
 }

@@ -9,7 +9,7 @@ typealias MiCMDResponse = MiResponse<MiResponse.Cmd>
 data class MiResponse<T>(
     @SerializedName("response") val response: String,
     @SerializedName("data") val data: T,
-    var device: Device? = null
+    val device: Device? = null
 ) {
     data class Cmd(@SerializedName("cmd") val cmd: MIEnumCMD)
 }

@@ -1,13 +1,11 @@
 package io.vonley.mi.models.enums
 
-import android.content.Context
 import android.os.Parcelable
 import androidx.annotation.StringRes
-import androidx.room.Entity
 import io.vonley.mi.R
-import io.vonley.mi.ui.screens.consoles.domain.remote.SyncService
 import io.vonley.mi.ui.screens.consoles.domain.model.Client
 import kotlinx.parcelize.Parcelize
+import okhttp3.OkHttpClient
 import okhttp3.Request
 
 /**
@@ -15,7 +13,6 @@ import okhttp3.Request
  * oneshot jb exploit. Our MiJbServer class will handle the netcat
  * payload
  */
-@Entity
 @Parcelize
 enum class Feature(
     val title: String,
@@ -34,53 +31,42 @@ enum class Feature(
     KLOG("Klog", R.string.feature_klog, Protocol.SOCKET, 3232),
     FTP("FTP", R.string.feature_ftp, Protocol.FTP, 21, 2121);
 
-    fun validate(client: Client, service: SyncService): Boolean {
-        fun req(url: String): String {
-            val req = Request.Builder()
-                .url(url)
-                .get()
-                .build()
-            val execute = service.http.newCall(req)
-            val response = execute.execute()
-            return response.body.string()
+    /**
+     * Confirms an open port really is this service. Only HTTP services that share
+     * common ports (port 80 is on most routers) need a content check.
+     */
+    fun validate(client: Client, http: OkHttpClient): Boolean {
+        fun body(url: String): String {
+            val request = Request.Builder().url(url).get().build()
+            return http.newCall(request).execute().use { it.body.string() }
         }
 
         return when (this) {
-            WEBMAN -> req("http://${client.ip}:${ports.first()}/index.ps3").let { s ->
-                s.lowercase().contains("ps3mapi") || s.lowercase()
-                    .contains("webman") || s.lowercase().contains("dex") ||
-                        s.lowercase().contains("d-rex") || s.lowercase()
-                    .contains("cex") || s.lowercase()
-                    .contains("rebug") ||
-                        s.lowercase().contains("rsx")
+            WEBMAN -> body("http://${client.ip}:${ports.first()}/index.ps3").lowercase().let { s ->
+                WEBMAN_MARKERS.any { marker -> marker in s }
             }
-            CCAPI -> req("http://${client.ip}:${ports.first()}/ccapi").let {
-                true
-            }
+
             else -> true
         }
-
     }
 
     companion object {
-        fun find(context: Context, id: String): Feature? {
-            return values().firstOrNull { p -> context.getString(p.id) == id }
-        }
+        private val WEBMAN_MARKERS = listOf("ps3mapi", "webman", "dex", "d-rex", "cex", "rebug", "rsx")
 
         /**
          * These fields are for client
          * Due to GoldenHen & NetCat being the payload sender,
          * we want to be extract careful what we send there.
          * Goldenhen Bin Uploader stops working after a while
-         * NetCat
          */
-        //arrayOf(ORBISAPI, RPI, PS3MAPI, CCAPI, WEBMAN, FTP, KLOG)
-        val stableFeatures: Array<Feature> =
-            values().filterNot { p -> p in arrayOf(NONE, NETCAT, GOLDENHEN) }.toTypedArray()
+        val stableFeatures: List<Feature> = entries.filterNot { p -> p in listOf(NONE, NETCAT, GOLDENHEN) }
 
         /**
          * These are stable sockets that are allowed to be opened for however long
          */
-        val allowedToOpen: Array<Feature> = arrayOf(PS3MAPI, CCAPI, WEBMAN, ORBISAPI, KLOG)
+        val allowedToOpen: List<Feature> = listOf(PS3MAPI, CCAPI, WEBMAN, ORBISAPI, KLOG)
+
+        /** Services with an interactive panel in the console control sheet. */
+        val controllable: List<Feature> = listOf(PS3MAPI, WEBMAN, CCAPI, KLOG)
     }
 }

@@ -1,104 +1,75 @@
 package io.vonley.mi.ui.screens.packages.data.repository
 
 import io.vonley.mi.common.Resource
+import io.vonley.mi.common.files.LocalFileSource
+import io.vonley.mi.extensions.e
 import io.vonley.mi.models.Payload
 import io.vonley.mi.ui.screens.packages.data.local.PackageRepositoryDao
 import io.vonley.mi.ui.screens.packages.data.local.entity.Package
-import io.vonley.mi.ui.screens.packages.data.local.entity.PackageType
-import io.vonley.mi.ui.screens.packages.domain.remote.RepoService
 import io.vonley.mi.ui.screens.packages.data.local.entity.Repo
+import io.vonley.mi.ui.screens.packages.domain.remote.RepoService
 import io.vonley.mi.ui.screens.packages.domain.repository.PackageRepository
-import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 class PackageRepositoryImpl @Inject constructor(
     private val dao: PackageRepositoryDao,
     private val repo: RepoService,
+    private val files: LocalFileSource,
 ) : PackageRepository {
 
-    private suspend fun fetch(link: String, save: Boolean = true): Repo? {
-        val search = repo.search(link)
-        if (search.isSuccessful) {
-            search.body()?.let {
-                it.link = link
-                it.packages.forEach { p ->
-                    p.repo = link
-                }
-                if (save) {
-                    if (!exists(link)) {
-                        dao.insert(it)
-                    } else {
-                        dao.update(it)
-                    }
-                }
-                return it
-            } ?: run {
-                // could not resolve
-            }
-        }
-        return null
+    private suspend fun fetch(link: String): Repo? {
+        val response = repo.search(link)
+        if (!response.isSuccessful) return null
+        val fetched = response.body() ?: return null
+        fetched.link = link
+        fetched.packages.forEach { p -> p.repo = link }
+        if (dao.exists(link)) dao.update(fetched) else dao.insert(fetched)
+        return fetched
     }
 
-
     override suspend fun addRepository(repoLink: String): Resource<Repo> {
-        val fetch = fetch(repoLink, true)
-        return fetch?.let { repo ->
-            Resource.Success(repo)
-        } ?: run {
-            Resource.Success(dao.get(repoLink).first())
-        }
+        val fetched = runCatching { fetch(repoLink) }
+            .onFailure { "Unable to fetch $repoLink: ${it.message}".e(TAG, it) }
+            .getOrNull()
+        return fetched?.let { Resource.Success(it) }
+            ?: Resource.Error("Unable to load a repository from $repoLink")
     }
 
     override suspend fun searchRelevance(search: String): Resource<List<Repo>> {
-        val single = dao.getByName(search).first()
-        return Resource.Success(single)
-    }
-
-    override suspend fun getRepository(link: String): Resource<List<Repo>> {
-        return if (fetch(link) != null) {
-            val get = dao.get(link)
-            return Resource.Success(get)
-        } else {
-            Resource.Error("Error", null)
+        val query = search.trim().lowercase()
+        val matches = dao.getAll().mapNotNull { repo ->
+            val repoMatches = repo.title.lowercase().contains(query) || repo.author.lowercase().contains(query)
+            val packages = repo.packages.filter { pkg ->
+                pkg.name.lowercase().contains(query) || pkg.author.lowercase().contains(query)
+            }
+            when {
+                repoMatches -> repo
+                packages.isNotEmpty() -> repo.copy(packages = packages.toTypedArray())
+                else -> null
+            }
         }
-    }
-
-    override suspend fun count(): Int {
-        return dao.count()
+        return Resource.Success(matches)
     }
 
     override suspend fun getRepositories(): Resource<List<Repo>> {
-        if (dao.count() == 0) {
-            if (!getDefaultRepo()) {
-                return Resource.Error("No value", emptyList())
-            }
+        if (dao.count() == 0 && runCatching { fetch(DEFAULT_REPO) }.getOrNull() == null) {
+            return Resource.Error("Unable to load the default repository", emptyList())
         }
         return Resource.Success(dao.getAll())
     }
 
-
-    override suspend fun getDefaultRepo(): Boolean {
-        return fetch("https://raw.githubusercontent.com/mitai-app/versioning/main/packages.json") != null
-    }
-
-    override suspend fun fromPackage(pkg: Package, key: String): Payload? {
-        val url = pkg.dl[key] ?: return null
-        val body = repo.downloadFile(url).body() ?: return null
-
-        val name = pkg.name + when (pkg.type) {
-            PackageType.PLUGIN -> ".bin"
-            PackageType.APP -> ".pkg"
-            else -> ""
-        }
-        return Payload(name, body.byteStream())
-    }
-
-    override suspend fun exists(link: String): Boolean {
-        return dao.exists(link)
+    override suspend fun download(pkg: Package, url: String): Payload? {
+        val response = repo.downloadFile(url)
+        val body = response.body() ?: return null
+        return files.stage(pkg.name + pkg.fileExtension, body.byteStream())
     }
 
     override suspend fun delete(link: String) {
-        return dao.delete(link)
+        dao.delete(link)
     }
 
+    private companion object {
+        const val TAG = "PackageRepository"
+        const val DEFAULT_REPO = "https://raw.githubusercontent.com/mitai-app/versioning/main/packages.json"
+    }
 }

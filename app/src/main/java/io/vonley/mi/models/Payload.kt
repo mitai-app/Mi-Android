@@ -1,23 +1,16 @@
 package io.vonley.mi.models
 
-import java.io.InputStream
+import java.io.File
 
 /**
- * status: -1 failed, 0 nothing, 1 succeeded
+ * A payload staged on local storage so it can be re-read (retries, HTTP range
+ * requests from the console's package installer) instead of being a one-shot stream.
  */
 data class Payload(
     val name: String,
-    var stream: InputStream,
-    var status: Int = 0,
-    var size: Long = 0,
-                   ) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is Payload) return false
-        return true
-    }
-
-    override fun hashCode(): Int {
-        return name.hashCode()
-    }
+    val file: File,
+) {
+    val size: Long get() = file.length()
+    val isBin: Boolean get() = name.endsWith(".bin", ignoreCase = true)
+    val isPkg: Boolean get() = name.endsWith(".pkg", ignoreCase = true)
 }

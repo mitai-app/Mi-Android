@@ -1,13 +1,8 @@
 package io.vonley.mi.ui.screens.packages.data.local.entity
 
-import android.os.Parcelable
-import androidx.room.Entity
 import com.google.gson.annotations.SerializedName
-import kotlinx.android.parcel.Parcelize
 
-@Entity
-@Parcelize
-enum class PackageType: Parcelable {
+enum class PackageType {
     @SerializedName("app")
     APP,
 

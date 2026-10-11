@@ -2,382 +2,269 @@ package io.vonley.mi.ui.screens.consoles.data.remote
 
 import android.content.Context
 import android.net.ConnectivityManager
-import android.net.Network
 import android.net.NetworkCapabilities
-import android.net.NetworkInfo
-import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
-import android.os.Build
 import android.text.format.Formatter
-import android.util.Log
-import androidx.annotation.RequiresApi
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import io.vonley.mi.BuildConfig
-import io.vonley.mi.di.annotations.GuestInterceptorOkHttpClient
-import io.vonley.mi.di.annotations.SharedPreferenceStorage
-import io.vonley.mi.di.network.handlers.ClientHandler
-import io.vonley.mi.di.network.handlers.base.BaseClientHandler
-import io.vonley.mi.di.network.handlers.impl.ConsoleClientHandler
-import io.vonley.mi.di.network.listeners.OnConsoleListener
-import io.vonley.mi.extensions.*
+import io.vonley.mi.common.coroutines.supervisedIoContext
+import io.vonley.mi.extensions.e
+import io.vonley.mi.extensions.i
+import io.vonley.mi.extensions.v
 import io.vonley.mi.models.enums.Feature
-import io.vonley.mi.di.persistence.AppDatabase
+import io.vonley.mi.models.enums.PlatformType
+import io.vonley.mi.models.enums.Protocol
 import io.vonley.mi.ui.screens.consoles.data.local.ConsoleDao
 import io.vonley.mi.ui.screens.consoles.domain.model.Client
 import io.vonley.mi.ui.screens.consoles.domain.model.Console
+import io.vonley.mi.ui.screens.consoles.domain.model.NetworkClient
 import io.vonley.mi.ui.screens.consoles.domain.remote.SyncService
 import io.vonley.mi.utils.SharedPreferenceManager
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import okhttp3.OkHttpClient
-import java.lang.ref.WeakReference
-import java.net.ConnectException
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Socket
-import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.CoroutineContext
 
-
 /**
- * ////////////////////////////////////////
- * ///   Author: Mr-Smithy-x (Vonley)   ///
- * ///     Purpose: Fetch Consoles      ///
- * ///        Project Mi: 1.2.22		///
- * ////////////////////////////////////////
- *
- * Sync Service is a class that meant to scan
- * the network for connect clients. whether
- * console or not, only to then to be further
- * analyzed and converted to be stored in
- * ConsoleDao Sqlite
- *
- * It is injected as a singleton and runs 1
- * sync job at a time.
+ * Scans the subnet for reachable hosts, probes them for console services and
+ * persists the results to [ConsoleDao]. Runs at most one scan job at a time.
  */
-class SyncServiceImpl constructor(
+class SyncServiceImpl(
     context: Context,
-    database: AppDatabase,
-    @SharedPreferenceStorage val manager: SharedPreferenceManager,
-    @GuestInterceptorOkHttpClient override val http: OkHttpClient
+    private val dao: ConsoleDao,
+    private val manager: SharedPreferenceManager,
+    override val http: OkHttpClient
 ) : SyncService, CoroutineScope {
 
-    override val TAG = SyncServiceImpl::class.java.name
-    override val handlers: HashMap<Class<*>, ClientHandler> = hashMapOf()
-    private val mContextRef: WeakReference<Context> = WeakReference<Context>(context)
-    private lateinit var cm: ConnectivityManager
-    private lateinit var wm: WifiManager
-    private val job = Job()
-    private val dao: ConsoleDao = database.consoleDao()
+    override val coroutineContext: CoroutineContext = supervisedIoContext(TAG)
 
-    private lateinit var activeJob: Job
+    private val appContext = context.applicationContext
+    private val cm = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    private val wm = appContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
 
-    override val isConnected: Boolean get() = isWifiAvailable()
+    private val cachedTargets = ConcurrentHashMap<String, ConcurrentHashMap<Feature, Socket>>()
 
-    //region Override
-    override val coroutineContext: CoroutineContext
-        get() = Dispatchers.IO + job
-    private val cachedTargets = hashMapOf<String, EnumMap<Feature, Socket>>()
+    private var activeJob: Job? = null
 
+    private val _target = MutableStateFlow<Client?>(null)
+    override val targetFlow: StateFlow<Client?> = _target.asStateFlow()
+
+    @Suppress("DEPRECATION")
+    override val wifiSsid: String
+        get() = wm.connectionInfo?.ssid?.removeSurrounding("\"").orEmpty()
+
+    @Suppress("DEPRECATION")
+    override val localDeviceIp: String
+        get() = Formatter.formatIpAddress(wm.connectionInfo?.ipAddress ?: 0)
+
+    override val isConnected: Boolean
+        get() {
+            val caps = cm.getNetworkCapabilities(cm.activeNetwork ?: return false) ?: return false
+            return caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                    caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+        }
 
     override fun getSocket(client: Client?, feature: Feature): Socket? {
         if (client == null) return null
-        return cachedTargets[client.ip]?.get(feature)
+        return cachedTargets[client.ip]?.get(feature)?.takeIf { it.isUsable }
     }
 
     override fun createSocket(client: Client?, feature: Feature): Socket? {
         if (client == null) return null
-        if (!cachedTargets.containsKey(client.ip)) {
-            cachedTargets[client.ip] = EnumMap<Feature, Socket>(Feature::class.java)
-        }
-        var tempSocket: Socket? = cachedTargets[client.ip]?.get(feature)
-        if (!cachedTargets[client.ip]!!.containsKey(feature) || tempSocket == null) {
+        val sockets = cachedTargets.getOrPut(client.ip) { ConcurrentHashMap() }
+        synchronized(sockets) {
+            sockets[feature]?.let { existing ->
+                if (existing.isUsable) return existing
+                sockets.remove(feature)
+                existing.closeQuietly()
+            }
             for (port in feature.ports) {
+                val socket = Socket()
                 try {
-                    val socket = Socket()
-                    socket.connect(InetSocketAddress(client.ip, port), 2000)
-                    if (socket.isConnected) {
-                        tempSocket = socket
-                        cachedTargets[client.ip]!![feature] = tempSocket
-                        break;
-                    }
-                } catch (con: ConnectException) {
-                    "${con.message}"//.e(TAG)
+                    socket.connect(InetSocketAddress(client.ip, port), CONNECT_TIMEOUT_MS)
+                    sockets[feature] = socket
+                    return socket
                 } catch (e: Throwable) {
-                    "${e.message}"//.e(TAG)
+                    socket.closeQuietly()
                 }
             }
-        }
-        if (tempSocket != null && (tempSocket.isClosed || !tempSocket.isConnected || tempSocket.isOutputShutdown)) {
-            try {
-                val lastPort: Int = tempSocket.port
-                tempSocket = Socket()
-                tempSocket.connect(InetSocketAddress(client.ip, lastPort), 3000)
-                cachedTargets[client.ip]!![feature] = tempSocket
-            } catch (e: Throwable) {
-                cachedTargets[client.ip]!![feature] = null
-            }
-        }
-        return cachedTargets[client.ip]!![feature]
-    }
-
-    private val _liveTarget: MutableLiveData<Client> = MutableLiveData()
-
-    override val liveTarget: LiveData<Client>
-        get() = _liveTarget
-
-
-    override val activeNetworkInfo: NetworkInfo?
-        get() = cm.activeNetworkInfo
-
-    @get:RequiresApi(Build.VERSION_CODES.M)
-    override val activeNetwork: Network?
-        get() = cm.activeNetwork
-
-    override val wifiInfo: WifiInfo
-        get() = wm.connectionInfo
-
-    override val localDeviceIpInt: Int
-        get() = wifiInfo.ipAddress
-
-    override val localDeviceIp: String
-        get() = Formatter.formatIpAddress(localDeviceIpInt)
-    //endregion
-
-    init {
-        handlers[ConsoleClientHandler::class.java] = ConsoleClientHandler(database.consoleDao())
-        val con = mContextRef.get()
-        if (con != null) {
-            cm = con.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            wm = con.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+            return null
         }
     }
 
-    override fun isNetworkAvailable(): Boolean {
-        val actNw = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            cm.getNetworkCapabilities(activeNetwork ?: return false) ?: return false
-        } else {
-            return activeNetworkInfo?.isConnected == true
-        }
-        return when {
-            actNw.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
-            actNw.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
-            //for other device how are able to connect with Ethernet
-            actNw.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
-            //for check internet over Bluetooth
-            actNw.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH) -> true
-            else -> false
-        }
-    }
-
-    override fun isWifiAvailable(): Boolean {
-        val actNw = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            cm.getNetworkCapabilities(activeNetwork ?: return false) ?: return false
-        } else {
-            return activeNetworkInfo?.isConnected == true
-        }
-        return when {
-            actNw.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
-            else -> false
-        }
-    }
-
-    override fun initialize() = Unit
-
-    /**
-     * Gets Active Clients & Gets Consoles
-     */
     override fun getClients(loop: Boolean) {
-        val block: suspend CoroutineScope.() -> Unit = {
+        if (activeJob?.isActive == true) return
+        activeJob = launch {
             do {
-                /**
-                 * First fetch and see if console are legit
-                 */
-                dao.get(wifiInfo.ssid).value?.let { consoles ->
-                    fetchConsolesListAsync(consoles)
-                }
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "[Finding Clients]")
-                }
-                val clients = fetchClientListAsync()
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "[Finding Consoles]")
-                }
-                fetchConsolesListAsync(clients)
-
-                if (BuildConfig.DEBUG) {
-                    if (loop) {
-                        Log.e(TAG, "[fetching again in ${manager.scanInterval} seconds]")
-                    } else {
-                        Log.e(TAG, "[ran only once]")
-                    }
-                }
-                val ms = (manager.scanInterval * 1000L) // can every 1500
-                delay(ms)
-            } while (loop)
-        }
-        if (!this::activeJob.isInitialized) activeJob = launch(block = block)
-        if (this.activeJob.isActive) return
-        if (this.activeJob.isCompleted) {
-            if (!activeJob.start()) {
-                activeJob = launch(block = block)
-            }
+                scan()
+                if (!loop) break
+                "[fetching again in ${manager.scanInterval} seconds]".v(TAG)
+                delay(manager.scanInterval * 1000L)
+            } while (isActive)
         }
     }
-
 
     override fun stop() {
-        if (this::activeJob.isInitialized) {
-            if (this.activeJob.isActive) {
-                this.activeJob.cancel()
-            }
-        }
+        activeJob?.cancel()
+        activeJob = null
     }
 
     override fun setTarget(client: Client) {
         manager.targetName = client.ip
-        synchronized(_liveTarget) {
-            _liveTarget.postValue(client)
-        }
+        _target.value = client
     }
 
-
-    override fun addConsoleListener(console: OnConsoleListener) {
-        this[ConsoleClientHandler::class.java].listeners[console.javaClass] = console
-    }
-
-    override fun removeConsoleListener(console: OnConsoleListener) {
-        this[ConsoleClientHandler::class.java].listeners.remove(console.javaClass)
-    }
-
-    /**
-     * TODO: Clean up all listeners so there no
-     * memory leak
-     */
     override fun cleanup() {
-        this.handlers.onEach {
-            val handler = it.value
-            if (handler is BaseClientHandler<*, *>) {
-                handler.listeners.clear()
-            }
+        cachedTargets.values.forEach { sockets -> sockets.values.forEach { it.closeQuietly() } }
+        cachedTargets.clear()
+    }
+
+    private suspend fun scan() {
+        if (!isConnected) {
+            "[Scan] skipped, not on wifi".i(TAG)
+            return
         }
-        cachedTargets.onEach { entry ->
-            val ip = entry.key
-            entry.value.onEach { entryFeature ->
-                val feature = entryFeature.key
-                val socket = entryFeature.value
-                if (socket.isConnected) {
-                    socket.close()
-                }
-            }
-        }.clear()
+        val wifi = wifiSsid
+        val clients = fetchClients(wifi)
+        val consoles = fetchConsoles(clients)
+        persist(wifi, consoles)
     }
 
     /**
-     * Fetch PS4 & PS3 Consoles on the current
-     * network for jailbroken devices
-     */
-    private suspend fun fetchConsoles(clients: List<Client>): List<Console> {
-        try {
-            val consoles = clients
-                .mapNotNull { client ->
-                    val console = client.console(this)
-                    if (console == null) {
-                        dao.delete(client.ip, client.wifi)
-                    }
-                    console
-                }.filter { console -> console.features.isNotEmpty() }
-            withContext(Dispatchers.Main) {
-                this@SyncServiceImpl[ConsoleClientHandler::class.java].handle(consoles)
-            }
-            "[FetchConsoles::End] End of Scan #: ${consoles.size}".v(TAG)
-            return consoles
-        } catch (t: Throwable) {
-            "[FetchConsoles::End] Well... that's not good. ${t.message}".e(TAG, t)
-        }
-        return emptyList()
-    }
-
-    /**
-     * Fetch All Connected Clients on the network
-     * for potential match (IPV4 Clients Only)
+     * Pings every IPv4 address on the /24 the device is on.
      * TODO: Accommodate for IPV6 Clients
      */
-    private fun fetchClients(): List<Client> {
-        try {
-            "[FetchClients::Start] Active Network: $activeNetworkInfo".i(TAG)
-            val prefix = localDeviceIp.substring(0, localDeviceIp.lastIndexOf(".") + 1)
-            val clients = ArrayList<Client>()
-            for (i in 1 until 256) {
-                try {
-                    val ip = "$prefix$i"
-                    val byName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        activeNetwork?.getByName(ip) ?: continue
-                    } else {
-                        InetAddress.getByName(ip) ?: continue
+    private suspend fun fetchClients(wifi: String): List<Client> = coroutineScope {
+        val ownIp = localDeviceIp
+        if (ownIp == "0.0.0.0") return@coroutineScope emptyList()
+        val prefix = ownIp.substringBeforeLast(".") + "."
+        val permits = Semaphore(SCAN_PARALLELISM)
+        (1 until 255)
+            .map { "$prefix$it" }
+            .filter { it != ownIp }
+            .map { ip ->
+                async {
+                    permits.withPermit {
+                        try {
+                            if (InetAddress.getByName(ip).isReachable(PING_TIMEOUT_MS)) {
+                                "[Client IP] ($ip) is reachable".v(TAG)
+                                NetworkClient(ip = ip, wifi = wifi)
+                            } else null
+                        } catch (e: Throwable) {
+                            null
+                        }
                     }
-
-                    if (byName.isReachable(100)) {
-                        "[Client IP] (${byName.hostAddress ?: byName.canonicalHostName}) is reachable".v(
-                            TAG
-                        )
-                        val client = byName.client(wi = wifiInfo)
-                        client.lastKnownReachable = true
-                        clients.add(client)
-                    } else {
-                        "[Client IP] ${byName.hostAddress ?: byName.canonicalHostName} is unreachable"
-                    }
-                } catch (e: Throwable) {
-                    "[Error] ${e.message}".e(TAG)
                 }
             }
-            "[FetchClients::End] End of scan, #: ${clients.size}".v(TAG)
-            return clients
+            .awaitAll()
+            .filterNotNull()
+            .also { "[FetchClients::End] reachable: ${it.size}".v(TAG) }
+    }
+
+    private suspend fun fetchConsoles(clients: List<Client>): List<Console> = coroutineScope {
+        val permits = Semaphore(SCAN_PARALLELISM)
+        clients.map { client ->
+            async {
+                permits.withPermit {
+                    val console = probe(client)
+                    if (console == null) dao.deleteUnpinned(client.ip)
+                    console
+                }
+            }
+        }.awaitAll().filterNotNull()
+    }
+
+    private suspend fun persist(wifi: String, consoles: List<Console>) {
+        try {
+            consoles.forEach { console ->
+                if (dao.exists(console.ip)) {
+                    dao.update(console.ip, console.type, console.features, true, console.wifi)
+                } else {
+                    dao.insert(console)
+                }
+            }
+            val found = consoles.map { it.ip }
+            dao.deleteMissing(wifi, found)
+            dao.markUnreachable(wifi, found)
+            "[FetchConsoles::End] consoles: ${consoles.size}".v(TAG)
         } catch (t: Throwable) {
-            Log.e(TAG, "[Error] Hmmm. that's not good. ${t.message}", t)
+            "[FetchConsoles::End] failed to persist scan: ${t.message}".e(TAG, t)
         }
-        return emptyList()
     }
 
-    private suspend fun fetchClientListAsync(): List<Client> {
-        val coroutineScope = coroutineScope {
-            val async = async {
-                return@async fetchClients()
+    /**
+     * Checks for active ports while avoiding unstable ones. Long-lived services
+     * keep their socket open in [cachedTargets] so later commands reuse it.
+     */
+    private fun probe(client: Client): Console? {
+        val features = Feature.stableFeatures.filter { feature ->
+            try {
+                when {
+                    feature in Feature.allowedToOpen && feature.protocol == Protocol.SOCKET ->
+                        createSocket(client, feature) != null
+
+                    feature == Feature.WEBMAN ->
+                        isPortOpen(client.ip, feature.ports.first()) && feature.validate(client, http)
+
+                    else -> feature.ports.any { port -> isPortOpen(client.ip, port) }
+                }
+            } catch (e: Throwable) {
+                false
             }
-            async.await()
         }
-        return coroutineScope
+        if (features.isEmpty()) return null
+        val type = when {
+            features.any { it in PlatformType.PS4.features } -> PlatformType.PS4
+            features.any { it in PlatformType.PS3.features } -> PlatformType.PS3
+            else -> PlatformType.UNKNOWN
+        }
+        return Console(
+            ip = client.ip,
+            name = client.ip,
+            type = type,
+            features = features,
+            lastKnownReachable = true,
+            wifi = client.wifi
+        )
     }
 
-    private suspend fun fetchConsolesListAsync(clients: List<Client>) {
-        return coroutineScope {
-            val async = async {
-                return@async fetchConsoles(clients)
-            }
-            async.await()
+    private fun isPortOpen(ip: String, port: Int): Boolean = Socket().use { socket ->
+        try {
+            socket.connect(InetSocketAddress(ip, port), PORT_PROBE_TIMEOUT_MS)
+            true
+        } catch (e: Throwable) {
+            false
         }
     }
 
+    private val Socket.isUsable: Boolean
+        get() = isConnected && !isClosed && !isOutputShutdown && !isInputShutdown
+
+    private fun Socket.closeQuietly() {
+        try {
+            close()
+        } catch (_: Throwable) {
+        }
+    }
 
     companion object {
-        const val TAG = "client"
+        const val TAG = "SyncService"
+        private const val SCAN_PARALLELISM = 32
+        private const val PING_TIMEOUT_MS = 300
+        private const val PORT_PROBE_TIMEOUT_MS = 1000
+        private const val CONNECT_TIMEOUT_MS = 2000
     }
-
-}
-
-
-operator fun <T : ClientHandler> SyncService.set(clazz: Class<T>, data: T) {
-    handlers[clazz] = data
-}
-
-operator fun <T : ClientHandler> SyncService.get(clazz: Class<T>): T {
-    return handlers[clazz] as T
-}
-
-operator fun <T : Client> SyncService.set(client: T?, feature: Feature) {
-    createSocket(client, feature)
-}
-
-operator fun <T : Client> SyncService.get(client: T?, feature: Feature): Socket? {
-    return getSocket(client, feature)
 }

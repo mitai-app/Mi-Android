@@ -22,7 +22,6 @@ import io.vonley.mi.ui.screens.consoles.data.local.ConsoleDao
     FeaturesConverter::class,
     ProtocolTypeConverter::class,
     CommonTypeConverter::class,
-    PackageTypeConverter::class,
     PackageTypeConverter::class
 )
 abstract class AppDatabase: RoomDatabase() {

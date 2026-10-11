@@ -1,6 +1,5 @@
 package io.vonley.mi.di.network.protocols.ps3mapi
 
-import androidx.lifecycle.LiveData
 import io.vonley.mi.di.network.protocols.common.*
 import io.vonley.mi.di.network.protocols.common.cmds.Boot
 import io.vonley.mi.di.network.protocols.common.cmds.Buzzer
@@ -14,20 +13,19 @@ import io.vonley.mi.models.enums.Feature
 import java.io.IOException
 import java.nio.channels.NotYetConnectedException
 
-interface PS3MAPI : PSXProtocol, PSXNotifier {
+interface PS3MAPI : SocketProtocol, PSXNotifier {
 
     override val feature: Feature get() = Feature.PS3MAPI
 
     val listener: Listener
     val processes: List<Process>
-    val liveProcesses: LiveData<List<Process>>
     var attached: Boolean
     var process: Process?
     var authed: Boolean
 
 
     override suspend fun sendAndRecv(data: String?): String? {
-        return when(socket.isConnected) {
+        return when (socketOrNull?.isConnected == true) {
             true -> {
                 if (authed) {
                     "${this::class.simpleName} Authenticated and connected!".e(TAG)
@@ -52,8 +50,8 @@ interface PS3MAPI : PSXProtocol, PSXNotifier {
     }
 
     suspend fun reAuth(onReAuth: OnReAuth): String? {
-        socket.close()
-        if(connect()){
+        runCatching { socketOrNull?.close() }
+        if (connect()) {
             return onReAuth()
         }
         return null
@@ -416,7 +414,7 @@ interface PS3MAPI : PSXProtocol, PSXNotifier {
     }
 
     val isConnected: Boolean
-        get() = if (socket.isConnected) {
+        get() = if (socketOrNull?.isConnected == true) {
             true
         } else {
             attached = false

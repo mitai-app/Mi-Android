@@ -1,57 +1,10 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Theme.Lambda" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/material_red</item>
-        <item name="colorPrimaryVariant">@color/grey</item>
-        <item name="colorOnPrimary">@color/white</item>
-        <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/material_red</item> <!-- This is for text -->
-        <item name="colorSecondaryVariant">@color/grey</item>
-        <item name="colorOnSecondary">@color/white</item>
-
-        <item name="android:textColorPrimary">@color/material_red</item>
-        <item name="android:textColorSecondary">@color/black</item>
-        <item name="android:colorAccent">@color/black</item>
-
-        <item name="colorError">@color/material_red</item>
-        <item name="colorOnError">@color/white</item>
-
-        <item name="android:textColor">@color/black</item>
-        <item name="background">@color/white</item>
-        <item name="colorSurface">@color/white</item>
-        <item name="colorOnSurface">@color/black</item>
-
-        <item name="android:fontFamily">@font/montserrat</item>
-        <!-- Status bar color. -->
+    <!-- Window theme only; all UI is drawn by Compose (see MiTheme). -->
+    <style name="Theme.Lambda" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/white</item>
         <item name="android:statusBarColor">@color/white</item>
-        <!-- Customize your theme here. -->
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+        <item name="android:navigationBarColor">@color/white</item>
+        <item name="android:fontFamily">@font/montserrat</item>
     </style>
-
-
-
-    <style name="Theme.Lambda.Prefs" parent="Theme.Lambda">
-        <item name="android:textColorPrimary">@color/material_red</item>
-        <item name="android:textColorSecondary">@color/black</item>
-        <item name="colorAccent">@color/material_red</item>
-    </style>
-
-
-    <style name="Theme.Lambda.NoActionBar">
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
-    </style>
-
-    <style name="Theme.Lambda.Dialog" parent="Theme.MaterialComponents.Dialog.Alert">
-        <item name="alertDialogStyle">@style/MaterialAlertDialog.App</item>
-        <item name="materialAlertDialogTitleTextStyle">@style/MaterialAlertDialog.App.Title.Text
-        </item>
-        <item name="buttonBarPositiveButtonStyle">@style/Widget.App.Button</item>
-        <item name="buttonBarNeutralButtonStyle">@style/Widget.App.Button</item>
-    </style>
-
-    <style name="Theme.Lambda.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
-
-    <style name="Theme.Lambda.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
-
 </resources>

@@ -1,7 +1,5 @@
 package io.vonley.mi.di.network.protocols.ps3mapi
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import io.vonley.mi.di.network.PSXService
 import io.vonley.mi.di.network.protocols.common.OnPipeReconnected
 import io.vonley.mi.di.network.protocols.common.models.Process
@@ -9,17 +7,13 @@ import io.vonley.mi.di.network.protocols.common.models.Temperature
 import io.vonley.mi.di.network.protocols.ps3mapi.models.PS3MAPIResponse
 import io.vonley.mi.extensions.e
 import io.vonley.mi.extensions.toJson
-import io.vonley.mi.ui.screens.consoles.data.remote.get
-import io.vonley.mi.ui.screens.consoles.data.remote.set
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
+import io.vonley.mi.ui.screens.consoles.domain.remote.set
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.OutputStream
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
-import kotlin.coroutines.CoroutineContext
 
 class PS3MAPIImpl(
     override val service: PSXService,
@@ -28,20 +22,15 @@ class PS3MAPIImpl(
     private var server: ServerSocket? = null
     private var data_sock: Socket? = null
 
-    private val _socket: Socket? get() = service[service.target, feature]
+    private val _socket: Socket? get() = socketOrNull
 
     override var authed: Boolean = false
-
-    override val socket: Socket get() = _socket!!
-
-    private val job = Job()
-    override val coroutineContext: CoroutineContext get() = Dispatchers.IO + job
 
     private var _br: BufferedReader? = null
     private var _pw: OutputStream? = null
 
-    override val br: BufferedReader get() = _br!!
-    override val pw: OutputStream get() = _pw!!
+    override val br: BufferedReader get() = _br ?: throw IOException("PS3MAPI is not connected")
+    override val pw: OutputStream get() = _pw ?: throw IOException("PS3MAPI is not connected")
 
     override suspend fun send(data: String?) {
         super.send(data + "\r\n")
@@ -50,58 +39,52 @@ class PS3MAPIImpl(
         if (_socket == null || _socket?.isClosed == true || _socket?.isConnected == false) {
             try {
                 authed = false
-                service[service.target] = feature
+                service.sync[service.target] = feature
                 "Socket is null, so we are connecting :)".e(TAG)
                 if (_socket == null) {
                     "Socket is still null?)".e(TAG)
                     return false
                 }
             }catch (e: Throwable){
-                "Brother man brother man, ${e.message}".e(TAG)
+                "Unable to open PS3MAPI socket: ${e.message}".e(TAG)
                 return false
             }
         }
-        if(!socket.isConnected) {
+        if (_socket?.isConnected != true) {
             authed = false
-            service[service.target] = feature
+            service.sync[service.target] = feature
         }
         return when {
             authed && _socket?.isConnected == true -> {
-                "Already connected bruh".e(TAG)
+                "PS3MAPI already connected".e(TAG)
                 _br = _socket?.getInputStream()?.bufferedReader()
                 _pw = _socket?.getOutputStream()
                 true
             }
             !authed && _socket?.isConnected == true && _socket?.isClosed == false-> {
-                "We have to auth this bitch ass socket".e(TAG)
+                "Authenticating PS3MAPI socket".e(TAG)
                 try {
+                    // Without a timeout a banner that was already consumed blocks readLine() forever.
+                    _socket?.soTimeout = READ_TIMEOUT_MS
                     _br = _socket?.getInputStream()?.bufferedReader()
                     _pw = _socket?.getOutputStream()
-                    val firstRecv = br.readLine()
-                    val secondRecv = br.readLine()
-                    "Got Value: $firstRecv".e(TAG)
-                    val first: PS3MAPIResponse = PS3MAPIResponse.parse(firstRecv)
+                    val first = PS3MAPIResponse.parse(br.readLine() ?: return false)
                     "Parsed: ${first.toJson()}".e(TAG)
-                    if (first.success && first.code === PS3MAPIResponse.Code.PS3MAPI_OK_MGR_SERVER_CONNECTING) {
-                        "Next Value: $secondRecv".e(TAG)
-                        val second: PS3MAPIResponse = PS3MAPIResponse.parse(secondRecv)
-                        "Parsed second: ${second.toJson()}".e(TAG)
-                        if (second.success && second.code === PS3MAPIResponse.Code.PS3MAPI_OK_MGR_SERVER_CONNECTED) {
-                            authed = true
-                            return true
-                        }
-                        return true
-                    }
-                    true
+                    if (first.code != PS3MAPIResponse.Code.PS3MAPI_OK_MGR_SERVER_CONNECTING) return false
+                    val second = PS3MAPIResponse.parse(br.readLine() ?: return false)
+                    "Parsed second: ${second.toJson()}".e(TAG)
+                    // Only report success once authenticated; otherwise sendAndRecv -> reAuth recurses.
+                    authed = second.code == PS3MAPIResponse.Code.PS3MAPI_OK_MGR_SERVER_CONNECTED
+                    authed
                 } catch (e: Throwable) {
                     e.message?.e("PS3MAPI:Connect:Error:notauthed:butconnected", e)
                     false
                 }
             }
             else -> try {
-                "Turn this shit off and try again next time".e(TAG)
+                "PS3MAPI socket unavailable, will retry on next connect".e(TAG)
                 authed = false
-                service[service.target] = feature
+                service.sync[service.target] = feature
                 false
             } catch (e: Throwable) {
                 e.message?.e("PS3MAPI:Connect:Error:else", e)
@@ -111,18 +94,8 @@ class PS3MAPIImpl(
     }
 
     override val listener: PS3MAPI.Listener = this
-    private var _liveProcesses = MutableLiveData<List<Process>>()
-    override val liveProcesses: LiveData<List<Process>> get() = _liveProcesses
-
-    private var _processes: ArrayList<Process> = arrayListOf()
-        set(value) {
-            if (value.isNotEmpty()) {
-                synchronized(_processes) {
-                    _liveProcesses.postValue(value)
-                }
-                field = value
-            }
-        }
+    @Volatile
+    private var _processes: List<Process> = emptyList()
 
 
     override val processes: List<Process> get() = _processes
@@ -236,4 +209,8 @@ class PS3MAPIImpl(
 
     }
 
+
+    private companion object {
+        const val READ_TIMEOUT_MS = 5000
+    }
 }
